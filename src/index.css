@@ -15,3 +15,11 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Make sure content doesn't get hidden behind navigation on mobile */
+@media (max-width: 768px) {
+  #root {
+    padding-top: 56px;
+    padding-bottom: 64px;
+  }
+}

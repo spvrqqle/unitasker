@@ -2,59 +2,49 @@ import React from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
-import { Box, Typography, Button, Avatar } from '@mui/material';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { Box } from '@mui/material';
+import Navigation from './components/common/Navigation';
+import ThemeToggle from './components/common/ThemeToggle';
 
 const AppContent = () => {
-  const { theme, isDarkMode, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        p: 3
-      }}>
-        <Box sx={{ 
-          maxWidth: 600, 
-          textAlign: 'center',
-          backgroundColor: 'background.paper',
-          p: 4,
-          borderRadius: 2,
-          boxShadow: 1
-        }}>
-          {/* Logo */}
-          <Avatar 
-            src="/favicon.png" 
-            alt="UniTasker Logo"
-            sx={{ 
-              width: 80, 
-              height: 80, 
-              margin: '0 auto 16px',
-              bgcolor: 'primary.main'
-            }}
-          />
-          <Typography variant="h2" gutterBottom color="primary">
-            UniTasker
-          </Typography>
-          <Typography variant="h5" gutterBottom color="text.secondary">
-            Offline-First Productivity PWA
-          </Typography>
-          <Typography variant="body1" sx={{ mt: 2, mb: 3 }}>
-            Your all-in-one productivity platform
-          </Typography>
-          <Button 
-            variant="contained" 
-            startIcon={isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-            onClick={toggleTheme}
-          >
-            Switch to {isDarkMode ? 'Light' : 'Dark'} Mode
-          </Button>
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <Navigation />
+        <Box 
+          component="main" 
+          sx={{ 
+            flexGrow: 1, 
+            p: 3,
+            width: { sm: `calc(100% - 240px)` },
+            mt: { xs: 7, sm: 0 },
+            mb: { xs: 7, sm: 0 }
+          }}
+        >
+          {/* Placeholder content */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            mb: 3
+          }}>
+            <h1>Welcome to UniTasker</h1>
+            <ThemeToggle />
+          </Box>
+          <Box sx={{ 
+            backgroundColor: 'background.paper',
+            p: 3,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
+            <p>Select a module from the navigation to get started.</p>
+            <p style={{ marginTop: '8px', color: '#666' }}>
+              Current view: Dashboard (coming soon)
+            </p>
+          </Box>
         </Box>
       </Box>
     </ThemeProvider>
