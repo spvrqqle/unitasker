@@ -101,6 +101,8 @@ const AppContent = () => {
                 />
               )}
             </Box>
+            
+            {/* Theme Toggle with Notification */}
             <ThemeToggle />
           </Box>
           
