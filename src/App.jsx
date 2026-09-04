@@ -3,7 +3,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
-import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, Chip } from '@mui/material';
 import Navigation from './components/common/Navigation';
 import ThemeToggle from './components/common/ThemeToggle';
 import TaskList from './components/tasks/TaskList';
@@ -82,24 +82,23 @@ const AppContent = () => {
             flexWrap: 'wrap',
             gap: 2
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
                 UniTasker
               </Typography>
               {isDBReady && (
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    color: 'success.main',
-                    bgcolor: 'success.light',
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1,
-                    fontWeight: 500,
+                <Chip
+                  label="● Online"
+                  size="small"
+                  sx={{
+                    bgcolor: 'success.main',
+                    color: 'white',
+                    fontWeight: 600,
+                    '& .MuiChip-label': {
+                      px: 1,
+                    }
                   }}
-                >
-                  ● Online
-                </Typography>
+                />
               )}
             </Box>
             <ThemeToggle />
