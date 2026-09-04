@@ -6,33 +6,26 @@ import {
   Typography,
 } from '@mui/material';
 import { WifiOff as WifiOffIcon } from '@mui/icons-material';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 
 const OfflineIndicator = () => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const isOnline = useOnlineStatus();
   const [showOffline, setShowOffline] = useState(false);
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      setShowOffline(false);
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
+    if (!isOnline) {
       setShowOffline(true);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+    } else {
+      // Small delay before hiding to allow the user to see the online transition
+      const timer = setTimeout(() => {
+        setShowOffline(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOnline]);
 
   // Show offline banner when offline
-  if (!isOnline) {
+  if (!isOnline && showOffline) {
     return (
       <Snackbar
         open={showOffline}

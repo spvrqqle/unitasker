@@ -4,14 +4,17 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
 import { Box, Typography, CircularProgress, Alert, Chip } from '@mui/material';
+import { WifiOff as WifiOffIcon, Wifi as WifiIcon } from '@mui/icons-material';
 import Navigation from './components/common/Navigation';
 import ThemeToggle from './components/common/ThemeToggle';
 import TaskList from './components/tasks/TaskList';
 import OfflineIndicator from './components/common/OfflineIndicator';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 
 const AppContent = () => {
   const { theme } = useTheme();
   const { appLoading, error, isDBReady } = useAppContext();
+  const isOnline = useOnlineStatus();
 
   // Show loading state
   if (appLoading) {
@@ -89,14 +92,18 @@ const AppContent = () => {
               </Typography>
               {isDBReady && (
                 <Chip
-                  label="● Online"
+                  icon={isOnline ? <WifiIcon sx={{ fontSize: 16 }} /> : <WifiOffIcon sx={{ fontSize: 16 }} />}
+                  label={isOnline ? 'Online' : 'Offline'}
                   size="small"
                   sx={{
-                    bgcolor: 'success.main',
+                    bgcolor: isOnline ? 'success.main' : 'error.main',
                     color: 'white',
                     fontWeight: 600,
                     '& .MuiChip-label': {
                       px: 1,
+                    },
+                    '& .MuiChip-icon': {
+                      color: 'white',
                     }
                   }}
                 />
