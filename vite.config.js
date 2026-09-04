@@ -33,6 +33,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Don't navigate to offline.html - let the app handle it
+        navigateFallback: null,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -55,22 +57,14 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 365
               }
             }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif)$/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'image-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30
-              }
-            }
           }
-        ],
-        // Navigate to offline.html when offline
-        navigateFallback: '/offline.html',
-        navigateFallbackDenylist: [/^\/api\//]
+        ]
+      },
+      // Don't use navigateFallback - let React Router handle routing
+      devOptions: {
+        enabled: true,
+        type: 'module',
+        navigateFallback: 'index.html'
       }
     })
   ],

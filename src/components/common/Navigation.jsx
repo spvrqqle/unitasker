@@ -91,7 +91,10 @@ const Navigation = () => {
               UniTasker
             </Typography>
           </Box>
-          <IconButton onClick={() => setDrawerOpen(true)}>
+          <IconButton 
+            onClick={() => setDrawerOpen(true)} 
+            aria-label="Open menu"
+          >
             <MenuIcon />
           </IconButton>
         </Paper>

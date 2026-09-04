@@ -65,6 +65,7 @@ const AppContent = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      {/* Remove aria-hidden from root - this was causing the warning */}
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <Navigation />
         <Box 
