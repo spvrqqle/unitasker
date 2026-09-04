@@ -7,6 +7,7 @@ import { Box, Typography, CircularProgress, Alert, Chip } from '@mui/material';
 import Navigation from './components/common/Navigation';
 import ThemeToggle from './components/common/ThemeToggle';
 import TaskList from './components/tasks/TaskList';
+import OfflineIndicator from './components/common/OfflineIndicator';
 
 const AppContent = () => {
   const { theme } = useTheme();
@@ -102,14 +103,15 @@ const AppContent = () => {
               )}
             </Box>
             
-            {/* Theme Toggle with Notification */}
             <ThemeToggle />
           </Box>
           
-          {/* Task List */}
           <TaskList />
         </Box>
       </Box>
+      
+      {/* Offline Indicator */}
+      <OfflineIndicator />
     </ThemeProvider>
   );
 };
