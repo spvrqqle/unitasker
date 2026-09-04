@@ -27,6 +27,7 @@ import {
   Warning as WarningIcon,
   Schedule as ScheduleIcon,
   PlayArrow as PlayArrowIcon,
+  Event as EventIcon,
 } from '@mui/icons-material';
 import { useTasks } from '../../hooks/useTasks';
 import { useNotes } from '../../hooks/useNotes';
@@ -34,7 +35,6 @@ import { useNotes } from '../../hooks/useNotes';
 const Dashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   
   const { tasks, loading: tasksLoading } = useTasks();
   const { notes, loading: notesLoading } = useNotes();
@@ -84,7 +84,7 @@ const Dashboard = () => {
              (dueDate.getTime() >= today.getTime() && dueDate.getTime() < tomorrow.getTime());
     }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-    setTodayTasks(todayTasksList.slice(0, 3));
+    setTodayTasks(todayTasksList.slice(0, 4));
 
     // Get upcoming tasks (next 7 days)
     const nextWeek = new Date(today);
@@ -98,12 +98,12 @@ const Dashboard = () => {
              dueDate.getTime() <= nextWeek.getTime();
     }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-    setUpcomingTasks(upcomingTasksList.slice(0, 3));
+    setUpcomingTasks(upcomingTasksList.slice(0, 4));
 
     // Get recent notes
     const recentNotesList = [...notes]
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-      .slice(0, 2);
+      .slice(0, 3);
     setRecentNotes(recentNotesList);
 
   }, [tasks, notes]);
@@ -136,34 +136,35 @@ const Dashboard = () => {
       sx={{
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s',
-        height: '100%',
         '&:hover': onClick ? {
-          transform: 'translateY(-2px)',
+          transform: 'translateY(-4px)',
           boxShadow: theme.shadows[4],
         } : {},
       }}
       onClick={onClick}
     >
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <CardContent sx={{ p: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box
             sx={{
               bgcolor: `${color}.light`,
               color: `${color}.main`,
-              p: 0.75,
-              borderRadius: 1.5,
+              p: 1,
+              borderRadius: 2,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              minWidth: 40,
+              minHeight: 40,
             }}
           >
             {icon}
           </Box>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
               {value}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+            <Typography variant="body2" color="text.secondary">
               {title}
             </Typography>
           </Box>
@@ -185,12 +186,12 @@ const Dashboard = () => {
   };
 
   return (
-    <Box sx={{ height: '100%' }}>
-      {/* Stats Grid - 4 columns */}
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
+    <Box>
+      {/* Stats Grid */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={6} sm={3}>
           <StatCard
-            icon={<TaskIcon sx={{ fontSize: 18 }} />}
+            icon={<TaskIcon sx={{ fontSize: 28 }} />}
             title="Open tasks"
             value={stats.openTasks}
             color="primary"
@@ -199,7 +200,7 @@ const Dashboard = () => {
         </Grid>
         <Grid item xs={6} sm={3}>
           <StatCard
-            icon={<WarningIcon sx={{ fontSize: 18 }} />}
+            icon={<WarningIcon sx={{ fontSize: 28 }} />}
             title="Due today"
             value={stats.dueToday}
             color="warning"
@@ -208,7 +209,7 @@ const Dashboard = () => {
         </Grid>
         <Grid item xs={6} sm={3}>
           <StatCard
-            icon={<NoteIcon sx={{ fontSize: 18 }} />}
+            icon={<NoteIcon sx={{ fontSize: 28 }} />}
             title="Notes"
             value={stats.notesCount}
             color="info"
@@ -217,7 +218,7 @@ const Dashboard = () => {
         </Grid>
         <Grid item xs={6} sm={3}>
           <StatCard
-            icon={<CalendarIcon sx={{ fontSize: 18 }} />}
+            icon={<EventIcon sx={{ fontSize: 28 }} />}
             title="Events"
             value={stats.eventsCount}
             color="success"
@@ -226,50 +227,50 @@ const Dashboard = () => {
       </Grid>
 
       {/* Quick Action Button */}
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={handleNavigateToTasks}
-        fullWidth={isMobile}
-        size="small"
-        sx={{ mb: 2, py: 1 }}
-      >
-        New task
-      </Button>
+      <Box sx={{ mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleNavigateToTasks}
+          fullWidth={isMobile}
+          sx={{ py: 1.5 }}
+        >
+          New task
+        </Button>
+      </Box>
 
-      {/* Main Content Grid - 2 columns */}
-      <Grid container spacing={2}>
+      {/* Main Content Grid */}
+      <Grid container spacing={3}>
         {/* Left Column - Tasks */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 1.5, mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, fontSize: '0.95rem' }}>
+          <Paper sx={{ p: 2.5, mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
               Today's Tasks
             </Typography>
             {todayTasks.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+              <Typography color="text.secondary" sx={{ py: 2 }}>
                 Nothing due today. Enjoy the calm! 🌟
               </Typography>
             ) : (
-              <List dense sx={{ py: 0 }}>
+              <List dense>
                 {todayTasks.map((task, index) => (
                   <React.Fragment key={task.id}>
                     {index > 0 && <Divider />}
-                    <ListItem sx={{ px: 0, py: 0.5 }}>
-                      <ListItemIcon sx={{ minWidth: 30 }}>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
                         {task.status === 'Completed' ? (
-                          <CheckCircleIcon color="success" sx={{ fontSize: 16 }} />
+                          <CheckCircleIcon color="success" />
                         ) : (
-                          <ScheduleIcon color={new Date(task.dueDate) < new Date() ? 'error' : 'warning'} sx={{ fontSize: 16 }} />
+                          <ScheduleIcon color={new Date(task.dueDate) < new Date() ? 'error' : 'warning'} />
                         )}
                       </ListItemIcon>
                       <ListItemText
                         primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <Typography
                               variant="body2"
                               sx={{
                                 textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
-                                fontSize: '0.8rem',
                               }}
                             >
                               {task.title}
@@ -278,12 +279,12 @@ const Dashboard = () => {
                               label={task.priority}
                               size="small"
                               color={getPriorityColor(task.priority)}
-                              sx={{ height: 16, '& .MuiChip-label': { fontSize: '0.5rem', px: 0.5 } }}
+                              sx={{ height: 20, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
                             />
                           </Box>
                         }
                         secondary={
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                          <Typography variant="caption" color="text.secondary">
                             {formatDate(task.dueDate)}
                           </Typography>
                         }
@@ -294,45 +295,45 @@ const Dashboard = () => {
               </List>
             )}
             {todayTasks.length > 0 && (
-              <Button size="small" onClick={handleNavigateToTasks} sx={{ mt: 0.5, fontSize: '0.7rem' }}>
-                View all →
+              <Button size="small" onClick={handleNavigateToTasks} sx={{ mt: 1 }}>
+                View all tasks →
               </Button>
             )}
           </Paper>
 
-          <Paper sx={{ p: 1.5 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, fontSize: '0.95rem' }}>
+          <Paper sx={{ p: 2.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
               Upcoming Deadlines
             </Typography>
             {upcomingTasks.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+              <Typography color="text.secondary" sx={{ py: 2 }}>
                 No upcoming deadlines. 🎉
               </Typography>
             ) : (
-              <List dense sx={{ py: 0 }}>
+              <List dense>
                 {upcomingTasks.map((task, index) => (
                   <React.Fragment key={task.id}>
                     {index > 0 && <Divider />}
-                    <ListItem sx={{ px: 0, py: 0.5 }}>
-                      <ListItemIcon sx={{ minWidth: 30 }}>
-                        <ScheduleIcon color="info" sx={{ fontSize: 16 }} />
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <ScheduleIcon color="info" />
                       </ListItemIcon>
                       <ListItemText
                         primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            <Typography variant="body2">
                               {task.title}
                             </Typography>
                             <Chip
                               label={task.priority}
                               size="small"
                               color={getPriorityColor(task.priority)}
-                              sx={{ height: 16, '& .MuiChip-label': { fontSize: '0.5rem', px: 0.5 } }}
+                              sx={{ height: 20, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
                             />
                           </Box>
                         }
                         secondary={
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                          <Typography variant="caption" color="text.secondary">
                             {formatDate(task.dueDate)}
                           </Typography>
                         }
@@ -343,42 +344,42 @@ const Dashboard = () => {
               </List>
             )}
             {upcomingTasks.length > 0 && (
-              <Button size="small" onClick={handleNavigateToTasks} sx={{ mt: 0.5, fontSize: '0.7rem' }}>
-                View all →
+              <Button size="small" onClick={handleNavigateToTasks} sx={{ mt: 1 }}>
+                View all tasks →
               </Button>
             )}
           </Paper>
         </Grid>
 
-        {/* Right Column - Notes and Events/Timer */}
+        {/* Right Column - Notes and Timer/Events */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 1.5, mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, fontSize: '0.95rem' }}>
+          <Paper sx={{ p: 2.5, mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
               Recent Notes
             </Typography>
             {recentNotes.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+              <Typography color="text.secondary" sx={{ py: 2 }}>
                 No notes yet. Start writing! 📝
               </Typography>
             ) : (
-              <List dense sx={{ py: 0 }}>
+              <List dense>
                 {recentNotes.map((note, index) => (
                   <React.Fragment key={note.id}>
                     {index > 0 && <Divider />}
-                    <ListItem sx={{ px: 0, py: 0.5 }}>
-                      <ListItemIcon sx={{ minWidth: 30 }}>
-                        <NoteIcon sx={{ fontSize: 16 }} />
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <NoteIcon />
                       </ListItemIcon>
                       <ListItemText
                         primary={
-                          <Typography variant="body2" noWrap sx={{ fontSize: '0.8rem' }}>
+                          <Typography variant="body2" noWrap>
                             {note.title || 'Untitled note'}
                           </Typography>
                         }
                         secondary={
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
-                            {note.content ? note.content.substring(0, 40) : 'Empty note'}
-                            {note.content && note.content.length > 40 ? '...' : ''}
+                          <Typography variant="caption" color="text.secondary">
+                            {note.content ? note.content.substring(0, 60) : 'Empty note'}
+                            {note.content && note.content.length > 60 ? '...' : ''}
                           </Typography>
                         }
                       />
@@ -388,40 +389,39 @@ const Dashboard = () => {
               </List>
             )}
             {recentNotes.length > 0 && (
-              <Button size="small" onClick={handleNavigateToNotes} sx={{ mt: 0.5, fontSize: '0.7rem' }}>
-                View all →
+              <Button size="small" onClick={handleNavigateToNotes} sx={{ mt: 1 }}>
+                View all notes →
               </Button>
             )}
           </Paper>
 
-          <Grid container spacing={1.5}>
+          <Grid container spacing={2}>
             <Grid item xs={6}>
-              <Paper sx={{ p: 1.5, height: '100%' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.85rem' }}>
+              <Paper sx={{ p: 2.5, height: '100%' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                   Next Events
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                <Typography color="text.secondary" sx={{ py: 1 }}>
                   Calendar is clear. 🗓️
                 </Typography>
               </Paper>
             </Grid>
             <Grid item xs={6}>
-              <Paper sx={{ p: 1.5, height: '100%' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.85rem' }}>
+              <Paper sx={{ p: 2.5, height: '100%' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                   Focus Timer
                 </Typography>
-                <Typography variant="h5" sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.3rem' }}>
+                <Typography variant="h3" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
                   25:00
                 </Typography>
                 <Button
                   variant="contained"
-                  size="small"
-                  startIcon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
+                  startIcon={<PlayArrowIcon />}
                   onClick={handleNavigateToTimer}
-                  sx={{ mt: 0.5, fontSize: '0.65rem', py: 0.5 }}
+                  sx={{ mt: 1 }}
                   fullWidth
                 >
-                  Start
+                  Start focus
                 </Button>
               </Paper>
             </Grid>
