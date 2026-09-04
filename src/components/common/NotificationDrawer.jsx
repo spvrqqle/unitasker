@@ -23,46 +23,55 @@ import {
   ClearAll as ClearAllIcon,
 } from '@mui/icons-material';
 
-// Sample notifications data
-const SAMPLE_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'task',
-    title: 'Task Due Soon',
-    message: 'Complete project proposal is due in 2 hours',
-    time: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    read: false,
-  },
-  {
-    id: 2,
-    type: 'reminder',
-    title: 'Reminder',
-    message: 'Team meeting at 3:00 PM',
-    time: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-    read: false,
-  },
-  {
-    id: 3,
-    type: 'info',
-    title: 'Task Completed',
-    message: 'You completed "Update documentation"',
-    time: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    read: true,
-  },
-];
+const STORAGE_KEY = 'unitaser_notifications';
 
 const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
   const theme = useTheme();
   
-  const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load notifications from localStorage on mount
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem(STORAGE_KEY);
+    
+    if (savedNotifications) {
+      try {
+        const parsed = JSON.parse(savedNotifications);
+        // Check if it's an array and has content
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setNotifications(parsed);
+          setIsInitialized(true);
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to parse notifications:', e);
+      }
+    }
+    
+    // If we get here, either no saved data or empty array
+    // Set to empty array and save it
+    setNotifications([]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    setIsInitialized(true);
+  }, []);
+
+  // Save to localStorage whenever notifications change
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+    }
+  }, [notifications, isInitialized]);
 
   // Update unread count whenever notifications change
   useEffect(() => {
-    const unreadCount = notifications.filter(n => !n.read).length;
-    if (onUnreadCountChange) {
-      onUnreadCountChange(unreadCount);
+    if (isInitialized) {
+      const unreadCount = notifications.filter(n => !n.read).length;
+      if (onUnreadCountChange) {
+        onUnreadCountChange(unreadCount);
+      }
     }
-  }, [notifications, onUnreadCountChange]);
+  }, [notifications, onUnreadCountChange, isInitialized]);
 
   const getIcon = (type) => {
     switch (type) {
@@ -104,6 +113,16 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
 
   const clearAll = () => {
     setNotifications([]);
+    // Save empty array to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+  };
+
+  const addNotification = (notification) => {
+    setNotifications(prev => {
+      const newNotifications = [notification, ...prev];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newNotifications));
+      return newNotifications;
+    });
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -158,9 +177,14 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
             </Button>
           )}
           {notifications.length > 0 && (
-            <IconButton size="small" onClick={clearAll} title="Clear all">
-              <ClearAllIcon />
-            </IconButton>
+            <Button
+              size="small"
+              onClick={clearAll}
+              color="error"
+              startIcon={<ClearAllIcon />}
+            >
+              Clear all
+            </Button>
           )}
           <IconButton size="small" onClick={onClose}>
             <CloseIcon />
