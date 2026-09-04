@@ -15,7 +15,7 @@ import {
   Toolbar,
   Avatar,
   Typography,
-  IconButton
+  IconButton,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -26,7 +26,8 @@ import {
   Timer as TimerIcon,
   Settings as SettingsIcon,
   Menu as MenuIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon
 } from '@mui/icons-material';
 
 const Navigation = () => {
@@ -37,6 +38,7 @@ const Navigation = () => {
   
   const [currentTab, setCurrentTab] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const navItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, value: 0 },
@@ -50,9 +52,11 @@ const Navigation = () => {
 
   const handleNavigation = (event, newValue) => {
     setCurrentTab(newValue);
-    // For now, just log the navigation
     console.log('Navigating to:', navItems[newValue].label);
-    // We'll implement actual navigation later with routing
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   // Mobile: Bottom Navigation
@@ -120,6 +124,13 @@ const Navigation = () => {
                   padding: '6px 4px',
                   '& .MuiBottomNavigationAction-label': {
                     fontSize: '10px'
+                  },
+                  '&.Mui-selected': {
+                    color: theme.palette.primary.main,
+                    '& .MuiBottomNavigationAction-label': {
+                      fontSize: '10px',
+                      fontWeight: 'bold'
+                    }
                   }
                 }}
               />
@@ -155,6 +166,12 @@ const Navigation = () => {
                     setCurrentTab(item.value);
                     setDrawerOpen(false);
                   }}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: 'rgba(13, 110, 253, 0.08)',
+                    }
+                  }}
+                  selected={currentTab === item.value}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.label} />
@@ -168,8 +185,12 @@ const Navigation = () => {
   }
 
   // Tablet & Desktop: Sidebar
-  const sidebarWidth = isDesktop ? 240 : 200;
-  const isCollapsed = isTablet;
+  // For tablet, we default to collapsed state
+  // For desktop, we use the user's toggle preference
+  const isCollapsed = isTablet ? true : sidebarCollapsed;
+  
+  // Width based on collapsed state
+  const sidebarWidth = isCollapsed ? 72 : (isDesktop ? 240 : 200);
 
   return (
     <Drawer
@@ -183,15 +204,16 @@ const Navigation = () => {
           top: 0,
           height: '100vh',
           borderRight: `1px solid ${theme.palette.divider}`,
-          ...(isCollapsed && {
-            width: 72,
-            '& .MuiListItemText-root': {
-              display: 'none'
-            }
-          })
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+          display: 'flex',
+          flexDirection: 'column',
         },
       }}
     >
+      {/* Header with logo */}
       <Toolbar sx={{ 
         justifyContent: isCollapsed ? 'center' : 'flex-start',
         minHeight: 64,
@@ -218,23 +240,75 @@ const Navigation = () => {
       </Toolbar>
       
       <Divider />
-      
-      <List>
-        {navItems.map((item) => (
+
+      {/* Navigation Items - Scrollable area */}
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        <List>
+          {navItems.map((item) => (
+            <ListItem 
+              button 
+              key={item.value}
+              selected={currentTab === item.value}
+              onClick={() => setCurrentTab(item.value)}
+              sx={{
+                minHeight: 48,
+                justifyContent: isCollapsed ? 'center' : 'initial',
+                px: 2.5,
+                '&.Mui-selected': {
+                  backgroundColor: 'rgba(13, 110, 253, 0.12)',
+                  borderRight: `3px solid ${theme.palette.primary.main}`,
+                  '&:hover': {
+                    backgroundColor: 'rgba(13, 110, 253, 0.18)',
+                  },
+                  '& .MuiListItemIcon-root': {
+                    color: theme.palette.primary.main,
+                  },
+                  '& .MuiListItemText-primary': {
+                    color: theme.palette.primary.main,
+                    fontWeight: 600,
+                  }
+                },
+                '&:hover': {
+                  backgroundColor: 'rgba(13, 110, 253, 0.04)',
+                }
+              }}
+            >
+              <ListItemIcon sx={{ 
+                minWidth: 0,
+                justifyContent: 'center',
+                mr: isCollapsed ? 0 : 2,
+                color: currentTab === item.value ? theme.palette.primary.main : 'inherit'
+              }}>
+                {item.icon}
+              </ListItemIcon>
+              {!isCollapsed && (
+                <ListItemText 
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontWeight: currentTab === item.value ? 600 : 400,
+                  }}
+                />
+              )}
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+
+      <Divider />
+
+      {/* Bottom section with collapse button - only show on desktop */}
+      <Box sx={{ p: 1 }}>
+        {isDesktop && (
           <ListItem 
             button 
-            key={item.value}
-            selected={currentTab === item.value}
-            onClick={() => setCurrentTab(item.value)}
+            onClick={toggleSidebar}
             sx={{
               minHeight: 48,
               justifyContent: isCollapsed ? 'center' : 'initial',
               px: 2.5,
-              '&.Mui-selected': {
-                backgroundColor: 'rgba(13, 110, 253, 0.08)',
-                '&:hover': {
-                  backgroundColor: 'rgba(13, 110, 253, 0.12)',
-                }
+              borderRadius: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(13, 110, 253, 0.04)',
               }
             }}
           >
@@ -243,14 +317,14 @@ const Navigation = () => {
               justifyContent: 'center',
               mr: isCollapsed ? 0 : 2
             }}>
-              {item.icon}
+              {sidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
             </ListItemIcon>
             {!isCollapsed && (
-              <ListItemText primary={item.label} />
+              <ListItemText primary="Collapse" />
             )}
           </ListItem>
-        ))}
-      </List>
+        )}
+      </Box>
     </Drawer>
   );
 };

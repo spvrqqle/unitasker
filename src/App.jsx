@@ -2,7 +2,7 @@ import React from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
-import { Box } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
 import Navigation from './components/common/Navigation';
 import ThemeToggle from './components/common/ThemeToggle';
 
@@ -24,27 +24,33 @@ const AppContent = () => {
             mb: { xs: 7, sm: 0 }
           }}
         >
-          {/* Placeholder content */}
+          {/* Header with theme toggle */}
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            mb: 3
+            mb: 3,
+            flexWrap: 'wrap',
+            gap: 2
           }}>
-            <h1>Welcome to UniTasker</h1>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+              Welcome to UniTasker
+            </Typography>
             <ThemeToggle />
           </Box>
-          <Box sx={{ 
-            backgroundColor: 'background.paper',
+          
+          <Paper sx={{ 
             p: 3,
             borderRadius: 2,
             boxShadow: 1
           }}>
-            <p>Select a module from the navigation to get started.</p>
-            <p style={{ marginTop: '8px', color: '#666' }}>
+            <Typography variant="body1" color="text.secondary">
+              Select a module from the navigation to get started.
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1, color: 'text.disabled' }}>
               Current view: Dashboard (coming soon)
-            </p>
-          </Box>
+            </Typography>
+          </Paper>
         </Box>
       </Box>
     </ThemeProvider>
