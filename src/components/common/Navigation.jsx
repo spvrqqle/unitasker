@@ -52,6 +52,8 @@ const Navigation = () => {
 
   const handleNavigation = (event, newValue) => {
     setCurrentTab(newValue);
+    // Dispatch custom event for navigation change
+    window.dispatchEvent(new CustomEvent('navigationChange', { detail: newValue }));
     console.log('Navigating to:', navItems[newValue].label);
   };
 
@@ -168,6 +170,7 @@ const Navigation = () => {
                   onClick={() => {
                     setCurrentTab(item.value);
                     setDrawerOpen(false);
+                    window.dispatchEvent(new CustomEvent('navigationChange', { detail: item.value }));
                   }}
                   sx={{
                     '&.Mui-selected': {
@@ -252,7 +255,10 @@ const Navigation = () => {
               button 
               key={item.value}
               selected={currentTab === item.value}
-              onClick={() => setCurrentTab(item.value)}
+              onClick={() => {
+                setCurrentTab(item.value);
+                window.dispatchEvent(new CustomEvent('navigationChange', { detail: item.value }));
+              }}
               sx={{
                 minHeight: 48,
                 justifyContent: isCollapsed ? 'center' : 'initial',

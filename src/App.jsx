@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
@@ -7,6 +7,7 @@ import { Box, Typography, CircularProgress, Alert, Chip } from '@mui/material';
 import { WifiOff as WifiOffIcon, Wifi as WifiIcon } from '@mui/icons-material';
 import Navigation from './components/common/Navigation';
 import ThemeToggle from './components/common/ThemeToggle';
+import Dashboard from './components/dashboard/Dashboard';
 import TaskList from './components/tasks/TaskList';
 import NoteList from './components/notes/NoteList';
 import OfflineIndicator from './components/common/OfflineIndicator';
@@ -16,10 +17,19 @@ const AppContent = () => {
   const { theme } = useTheme();
   const { appLoading, error, isDBReady } = useAppContext();
   const isOnline = useOnlineStatus();
-  const [currentView, setCurrentView] = useState(1); // 0: Dashboard, 1: Tasks, 2: Notes, etc.
+  const [currentTab, setCurrentTab] = useState(0);
 
-  // We'll use the Navigation's tab state later via context
-  // For now, we'll use a simple state
+  // Listen for navigation changes
+  useEffect(() => {
+    const handleNavigationChange = (event) => {
+      setCurrentTab(event.detail);
+    };
+
+    window.addEventListener('navigationChange', handleNavigationChange);
+    return () => {
+      window.removeEventListener('navigationChange', handleNavigationChange);
+    };
+  }, []);
 
   // Show loading state
   if (appLoading) {
@@ -69,9 +79,30 @@ const AppContent = () => {
 
   // Render the appropriate view based on current tab
   const renderView = () => {
-    // For now, we'll show Tasks by default
-    // Later we'll connect this to the Navigation tab state
-    return <TaskList />;
+    switch(currentTab) {
+      case 0:
+        return <Dashboard />;
+      case 1:
+        return <TaskList />;
+      case 2:
+        return <NoteList />;
+      case 3:
+        return <Box sx={{ p: 3 }}><Typography>Calendar View (Coming Soon)</Typography></Box>;
+      case 4:
+        return <Box sx={{ p: 3 }}><Typography>Resources View (Coming Soon)</Typography></Box>;
+      case 5:
+        return <Box sx={{ p: 3 }}><Typography>Timer View (Coming Soon)</Typography></Box>;
+      case 6:
+        return <Box sx={{ p: 3 }}><Typography>Settings View (Coming Soon)</Typography></Box>;
+      default:
+        return <Dashboard />;
+    }
+  };
+
+  // Get the current view name for the header
+  const getViewName = () => {
+    const names = ['Dashboard', 'Tasks', 'Notes', 'Calendar', 'Resources', 'Timer', 'Settings'];
+    return names[currentTab] || 'Dashboard';
   };
 
   return (
@@ -100,7 +131,7 @@ const AppContent = () => {
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-                UniTasker
+                {getViewName()}
               </Typography>
               {isDBReady && (
                 <Chip
