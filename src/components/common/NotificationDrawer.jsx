@@ -38,8 +38,7 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
     if (savedNotifications) {
       try {
         const parsed = JSON.parse(savedNotifications);
-        // Check if it's an array and has content
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setNotifications(parsed);
           setIsInitialized(true);
           return;
@@ -49,8 +48,7 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
       }
     }
     
-    // If we get here, either no saved data or empty array
-    // Set to empty array and save it
+    // If we get here, either no saved data or invalid
     setNotifications([]);
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     setIsInitialized(true);
@@ -113,16 +111,7 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
 
   const clearAll = () => {
     setNotifications([]);
-    // Save empty array to localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-  };
-
-  const addNotification = (notification) => {
-    setNotifications(prev => {
-      const newNotifications = [notification, ...prev];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newNotifications));
-      return newNotifications;
-    });
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;

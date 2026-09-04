@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconButton, Tooltip, Switch, FormControlLabel, Box, Badge } from '@mui/material';
 import { WbSunny, DarkMode, NotificationsOutlined } from '@mui/icons-material';
 import { useTheme as useThemeContext } from '../../context/ThemeContext';
@@ -7,7 +7,25 @@ import NotificationDrawer from './NotificationDrawer';
 const ThemeToggle = () => {
   const { isDarkMode, toggleTheme } = useThemeContext();
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(2); // Start with 2 unread from sample
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load unread count from localStorage on mount
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem('unitaser_notifications');
+    if (savedNotifications) {
+      try {
+        const parsed = JSON.parse(savedNotifications);
+        if (Array.isArray(parsed)) {
+          const count = parsed.filter(n => !n.read).length;
+          setUnreadCount(count);
+        }
+      } catch (e) {
+        console.error('Failed to parse notifications:', e);
+      }
+    }
+    setIsInitialized(true);
+  }, []);
 
   const handleNotificationClick = () => {
     setNotificationOpen(true);
@@ -20,6 +38,9 @@ const ThemeToggle = () => {
   const handleUnreadCountChange = (count) => {
     setUnreadCount(count);
   };
+
+  // Don't show badge until initialized to prevent flash
+  const showBadge = isInitialized && unreadCount > 0;
 
   return (
     <>
@@ -37,9 +58,13 @@ const ThemeToggle = () => {
               }
             }}
           >
-            <Badge badgeContent={unreadCount} color="error">
+            {showBadge ? (
+              <Badge badgeContent={unreadCount} color="error">
+                <NotificationsOutlined />
+              </Badge>
+            ) : (
               <NotificationsOutlined />
-            </Badge>
+            )}
           </IconButton>
         </Tooltip>
 

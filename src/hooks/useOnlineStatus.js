@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 
 export const useOnlineStatus = () => {
   // Initialize with navigator.onLine
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     // Handle online event
@@ -27,9 +25,10 @@ export const useOnlineStatus = () => {
     const interval = setInterval(() => {
       const currentStatus = navigator.onLine;
       if (currentStatus !== isOnline) {
+        console.log(`🔄 Status changed from ${isOnline} to ${currentStatus}`);
         setIsOnline(currentStatus);
       }
-    }, 3000);
+    }, 2000);
 
     // Cleanup
     return () => {
