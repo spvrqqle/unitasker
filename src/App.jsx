@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
@@ -8,6 +8,7 @@ import { WifiOff as WifiOffIcon, Wifi as WifiIcon } from '@mui/icons-material';
 import Navigation from './components/common/Navigation';
 import ThemeToggle from './components/common/ThemeToggle';
 import TaskList from './components/tasks/TaskList';
+import NoteList from './components/notes/NoteList';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
@@ -15,6 +16,10 @@ const AppContent = () => {
   const { theme } = useTheme();
   const { appLoading, error, isDBReady } = useAppContext();
   const isOnline = useOnlineStatus();
+  const [currentView, setCurrentView] = useState(1); // 0: Dashboard, 1: Tasks, 2: Notes, etc.
+
+  // We'll use the Navigation's tab state later via context
+  // For now, we'll use a simple state
 
   // Show loading state
   if (appLoading) {
@@ -62,10 +67,16 @@ const AppContent = () => {
     );
   }
 
+  // Render the appropriate view based on current tab
+  const renderView = () => {
+    // For now, we'll show Tasks by default
+    // Later we'll connect this to the Navigation tab state
+    return <TaskList />;
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {/* Remove aria-hidden from root - this was causing the warning */}
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <Navigation />
         <Box 
@@ -115,7 +126,8 @@ const AppContent = () => {
             <ThemeToggle />
           </Box>
           
-          <TaskList />
+          {/* Render the current view */}
+          {renderView()}
         </Box>
       </Box>
       
