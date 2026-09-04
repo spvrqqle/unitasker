@@ -3,9 +3,10 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
-import { Box, Typography, Paper, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import Navigation from './components/common/Navigation';
 import ThemeToggle from './components/common/ThemeToggle';
+import TaskList from './components/tasks/TaskList';
 
 const AppContent = () => {
   const { theme } = useTheme();
@@ -66,13 +67,13 @@ const AppContent = () => {
           component="main" 
           sx={{ 
             flexGrow: 1, 
-            p: 3,
+            p: { xs: 2, sm: 3 },
             width: { sm: `calc(100% - 240px)` },
             mt: { xs: 7, sm: 0 },
-            mb: { xs: 7, sm: 0 }
+            mb: { xs: 7, sm: 0 },
+            overflow: 'auto',
           }}
         >
-          {/* Header with theme toggle */}
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -81,29 +82,31 @@ const AppContent = () => {
             flexWrap: 'wrap',
             gap: 2
           }}>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-              Welcome to UniTasker
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+                UniTasker
+              </Typography>
+              {isDBReady && (
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: 'success.main',
+                    bgcolor: 'success.light',
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                    fontWeight: 500,
+                  }}
+                >
+                  ● Online
+                </Typography>
+              )}
+            </Box>
             <ThemeToggle />
           </Box>
           
-          <Paper sx={{ 
-            p: 3,
-            borderRadius: 2,
-            boxShadow: 1
-          }}>
-            <Typography variant="body1" color="text.secondary">
-              Select a module from the navigation to get started.
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1, color: 'text.disabled' }}>
-              Current view: Dashboard (coming soon)
-            </Typography>
-            {isDBReady && (
-              <Typography variant="caption" sx={{ mt: 2, display: 'block', color: 'success.main' }}>
-                ✅ Database ready
-              </Typography>
-            )}
-          </Paper>
+          {/* Task List */}
+          <TaskList />
         </Box>
       </Box>
     </ThemeProvider>
