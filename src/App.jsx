@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
@@ -104,7 +104,8 @@ const AppContent = () => {
                     },
                     '& .MuiChip-icon': {
                       color: 'white',
-                    }
+                    },
+                    transition: 'all 0.3s ease',
                   }}
                 />
               )}
