@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   TextField,
@@ -13,7 +13,7 @@ import {
   useMediaQuery,
   Grid,
 } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon, FilterList as FilterIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 
 const NoteFilters = ({ 
   filters, 
@@ -42,7 +42,7 @@ const NoteFilters = ({
     <Box sx={{ mb: 3 }}>
       <Grid container spacing={2} alignItems="center">
         {/* Search */}
-        <Grid item xs={12} sm={8} md={9}>
+        <Grid item xs={12} sm={7} md={8}>
           <TextField
             placeholder="Search notes by title, content, or tags..."
             value={filters.searchTerm || ''}
@@ -68,13 +68,16 @@ const NoteFilters = ({
         </Grid>
 
         {/* Tag Filter */}
-        <Grid item xs={12} sm={4} md={3}>
+        <Grid item xs={12} sm={5} md={4}>
           <FormControl size="small" fullWidth>
-            <InputLabel>Filter by Tag</InputLabel>
+            <InputLabel id="tag-filter-label">Filter by Tag</InputLabel>
             <Select
+              labelId="tag-filter-label"
+              id="tag-filter-select"
               value={filters.selectedTag || ''}
               onChange={handleTagFilterChange}
               label="Filter by Tag"
+              displayEmpty
             >
               <MenuItem value="">All Tags</MenuItem>
               {availableTags.map((tag) => (
