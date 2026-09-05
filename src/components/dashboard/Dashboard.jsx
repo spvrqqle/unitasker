@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -10,24 +9,23 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon,
   Divider,
   Chip,
-  Stack,
   useTheme,
   useMediaQuery,
+  IconButton,
 } from '@mui/material';
 import {
   Task as TaskIcon,
   Note as NoteIcon,
-  CalendarToday as CalendarIcon,
-  Timer as TimerIcon,
+  Event as EventIcon,
+  Folder as FolderIcon,
   Add as AddIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
   Schedule as ScheduleIcon,
   PlayArrow as PlayArrowIcon,
-  Event as EventIcon,
+  Timer as TimerIcon,
 } from '@mui/icons-material';
 import { useTasks } from '../../hooks/useTasks';
 import { useNotes } from '../../hooks/useNotes';
@@ -36,8 +34,8 @@ const Dashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
-  const { tasks, loading: tasksLoading } = useTasks();
-  const { notes, loading: notesLoading } = useNotes();
+  const { tasks } = useTasks();
+  const { notes } = useNotes();
 
   const [stats, setStats] = useState({
     openTasks: 0,
@@ -49,6 +47,8 @@ const Dashboard = () => {
   const [todayTasks, setTodayTasks] = useState([]);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [recentNotes, setRecentNotes] = useState([]);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
 
   useEffect(() => {
     // Calculate stats
@@ -70,7 +70,7 @@ const Dashboard = () => {
       eventsCount: 0,
     });
 
-    // Get today's tasks (due today or overdue)
+    // Get today's tasks
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -84,9 +84,9 @@ const Dashboard = () => {
              (dueDate.getTime() >= today.getTime() && dueDate.getTime() < tomorrow.getTime());
     }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-    setTodayTasks(todayTasksList.slice(0, 4));
+    setTodayTasks(todayTasksList);
 
-    // Get upcoming tasks (next 7 days)
+    // Get upcoming tasks
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
     
@@ -98,15 +98,42 @@ const Dashboard = () => {
              dueDate.getTime() <= nextWeek.getTime();
     }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-    setUpcomingTasks(upcomingTasksList.slice(0, 4));
+    setUpcomingTasks(upcomingTasksList);
 
     // Get recent notes
     const recentNotesList = [...notes]
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-      .slice(0, 3);
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     setRecentNotes(recentNotesList);
 
   }, [tasks, notes]);
+
+  // Timer logic
+  useEffect(() => {
+    let interval;
+    if (timerRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setTimerRunning(false);
+    }
+    return () => clearInterval(interval);
+  }, [timerRunning, timeLeft]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const toggleTimer = () => {
+    setTimerRunning(!timerRunning);
+  };
+
+  const resetTimer = () => {
+    setTimerRunning(false);
+    setTimeLeft(25 * 60);
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No date';
@@ -131,48 +158,6 @@ const Dashboard = () => {
     }
   };
 
-  const StatCard = ({ icon, title, value, color, onClick }) => (
-    <Card
-      sx={{
-        cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.2s',
-        '&:hover': onClick ? {
-          transform: 'translateY(-4px)',
-          boxShadow: theme.shadows[4],
-        } : {},
-      }}
-      onClick={onClick}
-    >
-      <CardContent sx={{ p: 2.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box
-            sx={{
-              bgcolor: `${color}.light`,
-              color: `${color}.main`,
-              p: 1,
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: 40,
-              minHeight: 40,
-            }}
-          >
-            {icon}
-          </Box>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-              {value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {title}
-            </Typography>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-
   const handleNavigateToTasks = () => {
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: 1 }));
   };
@@ -181,110 +166,209 @@ const Dashboard = () => {
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: 2 }));
   };
 
+  const handleNavigateToResources = () => {
+    window.dispatchEvent(new CustomEvent('navigationChange', { detail: 4 }));
+  };
+
   const handleNavigateToTimer = () => {
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: 5 }));
   };
 
-  return (
-    <Box>
-      {/* Stats Grid */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={3}>
-          <StatCard
-            icon={<TaskIcon sx={{ fontSize: 28 }} />}
-            title="Open tasks"
-            value={stats.openTasks}
-            color="primary"
-            onClick={handleNavigateToTasks}
-          />
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <StatCard
-            icon={<WarningIcon sx={{ fontSize: 28 }} />}
-            title="Due today"
-            value={stats.dueToday}
-            color="warning"
-            onClick={handleNavigateToTasks}
-          />
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <StatCard
-            icon={<NoteIcon sx={{ fontSize: 28 }} />}
-            title="Notes"
-            value={stats.notesCount}
-            color="info"
-            onClick={handleNavigateToNotes}
-          />
-        </Grid>
-        <Grid item xs={6} sm={3}>
-          <StatCard
-            icon={<EventIcon sx={{ fontSize: 28 }} />}
-            title="Events"
-            value={stats.eventsCount}
-            color="success"
-          />
-        </Grid>
-      </Grid>
+  const StatCard = ({ icon, title, value, onClick, color }) => (
+    <Card
+      sx={{
+        cursor: onClick ? 'pointer' : 'default',
+        height: '100%',
+        '&:hover': onClick ? {
+          transform: 'translateY(-2px)',
+          boxShadow: theme.shadows[4],
+        } : {},
+        bgcolor: 'background.paper',
+        flex: 1,
+      }}
+      onClick={onClick}
+    >
+      <CardContent sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        p: 2,
+        '&:last-child': { pb: 2 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+            {value}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+            {title}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            p: 1,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'action.hover',
+            color: color || 'primary.main',
+          }}
+        >
+          {icon}
+        </Box>
+      </CardContent>
+    </Card>
+  );
 
-      {/* Quick Action Button */}
-      <Box sx={{ mb: 3 }}>
+  return (
+    <Box sx={{ 
+      height: 'calc(100vh - 180px)', 
+      display: 'flex', 
+      flexDirection: 'column',
+      gap: 1.5,
+    }}>
+      {/* Row 1: Stats Cards */}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 1.5,
+        flexShrink: 0,
+      }}>
+        <StatCard
+          icon={<TaskIcon sx={{ fontSize: 24 }} />}
+          title="Open tasks"
+          value={stats.openTasks}
+          onClick={handleNavigateToTasks}
+          color="primary.main"
+        />
+        <StatCard
+          icon={<WarningIcon sx={{ fontSize: 24 }} />}
+          title="Due today"
+          value={stats.dueToday}
+          onClick={handleNavigateToTasks}
+          color="warning.main"
+        />
+        <StatCard
+          icon={<NoteIcon sx={{ fontSize: 24 }} />}
+          title="Notes"
+          value={stats.notesCount}
+          onClick={handleNavigateToNotes}
+          color="info.main"
+        />
+        <StatCard
+          icon={<EventIcon sx={{ fontSize: 24 }} />}
+          title="Events"
+          value={stats.eventsCount}
+          color="success.main"
+        />
+      </Box>
+
+      {/* Row 2: Quick Action Buttons */}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 1.5,
+        flexShrink: 0,
+      }}>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleNavigateToTasks}
-          fullWidth={isMobile}
-          sx={{ py: 1.5 }}
+          sx={{ flex: 1, py: 1 }}
+          size="small"
         >
           New task
         </Button>
+        <Button
+          variant="outlined"
+          startIcon={<NoteIcon />}
+          onClick={handleNavigateToNotes}
+          sx={{ flex: 1, py: 1 }}
+          size="small"
+        >
+          Notes
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<FolderIcon />}
+          onClick={handleNavigateToResources}
+          sx={{ flex: 1, py: 1 }}
+          size="small"
+        >
+          Resources
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<TimerIcon />}
+          onClick={toggleTimer}
+          sx={{ flex: 1, py: 1 }}
+          size="small"
+        >
+          {timerRunning ? formatTime(timeLeft) : '25:00'}
+        </Button>
       </Box>
 
-      {/* Main Content Grid */}
-      <Grid container spacing={3}>
-        {/* Left Column - Tasks */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2.5, mb: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-              Today's Tasks
-            </Typography>
+      {/* Row 3: Main Content - Flexbox with equal columns */}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 1.5,
+        flex: 1,
+        minHeight: 0,
+      }}>
+        {/* Column 1: Today's Tasks */}
+        <Paper sx={{ 
+          flex: 1,
+          p: 1.5,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
+            Today's Tasks
+          </Typography>
+          <Box sx={{ 
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
             {todayTasks.length === 0 ? (
-              <Typography color="text.secondary" sx={{ py: 2 }}>
-                Nothing due today. Enjoy the calm! 🌟
+              <Typography variant="body2" color="text.secondary" sx={{ py: 2, fontSize: '0.8rem' }}>
+                Nothing due today. 🌟
               </Typography>
             ) : (
-              <List dense>
-                {todayTasks.map((task, index) => (
+              <List dense sx={{ 
+                py: 0, 
+                flex: 1,
+                overflow: 'auto',
+                '&::-webkit-scrollbar': { width: '4px' },
+                '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
+              }}>
+                {todayTasks.slice(0, 8).map((task, index) => (
                   <React.Fragment key={task.id}>
                     {index > 0 && <Divider />}
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        {task.status === 'Completed' ? (
-                          <CheckCircleIcon color="success" />
-                        ) : (
-                          <ScheduleIcon color={new Date(task.dueDate) < new Date() ? 'error' : 'warning'} />
-                        )}
-                      </ListItemIcon>
+                    <ListItem sx={{ px: 0, py: 0.5 }}>
                       <ListItemText
                         primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
-                              }}
-                            >
-                              {task.title}
-                            </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '0.8rem',
+                              textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                            }}
+                          >
+                            {task.title}
                             <Chip
                               label={task.priority}
                               size="small"
                               color={getPriorityColor(task.priority)}
-                              sx={{ height: 20, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
+                              sx={{ height: 16, '& .MuiChip-label': { fontSize: '0.5rem', px: 0.5 } }}
                             />
-                          </Box>
+                          </Typography>
                         }
                         secondary={
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
                             {formatDate(task.dueDate)}
                           </Typography>
                         }
@@ -294,140 +378,213 @@ const Dashboard = () => {
                 ))}
               </List>
             )}
-            {todayTasks.length > 0 && (
-              <Button size="small" onClick={handleNavigateToTasks} sx={{ mt: 1 }}>
-                View all tasks →
+            {todayTasks.length > 8 && (
+              <Button size="small" onClick={handleNavigateToTasks} sx={{ fontSize: '0.7rem', flexShrink: 0 }}>
+                View all →
               </Button>
             )}
-          </Paper>
+          </Box>
+        </Paper>
 
-          <Paper sx={{ p: 2.5 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {/* Column 2: Upcoming Deadlines + Next Events */}
+        <Box sx={{ 
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1.5,
+          minHeight: 0,
+        }}>
+          <Paper sx={{ 
+            flex: 1,
+            p: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
               Upcoming Deadlines
             </Typography>
-            {upcomingTasks.length === 0 ? (
-              <Typography color="text.secondary" sx={{ py: 2 }}>
-                No upcoming deadlines. 🎉
-              </Typography>
-            ) : (
-              <List dense>
-                {upcomingTasks.map((task, index) => (
-                  <React.Fragment key={task.id}>
-                    {index > 0 && <Divider />}
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <ScheduleIcon color="info" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                            <Typography variant="body2">
+            <Box sx={{ 
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              {upcomingTasks.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 1, fontSize: '0.8rem' }}>
+                  No upcoming deadlines. 🎉
+                </Typography>
+              ) : (
+                <List dense sx={{ 
+                  py: 0, 
+                  flex: 1,
+                  overflow: 'auto',
+                  '&::-webkit-scrollbar': { width: '4px' },
+                  '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
+                }}>
+                  {upcomingTasks.slice(0, 5).map((task, index) => (
+                    <React.Fragment key={task.id}>
+                      {index > 0 && <Divider />}
+                      <ListItem sx={{ px: 0, py: 0.5 }}>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
                               {task.title}
                             </Typography>
-                            <Chip
-                              label={task.priority}
-                              size="small"
-                              color={getPriorityColor(task.priority)}
-                              sx={{ height: 20, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
-                            />
-                          </Box>
-                        }
-                        secondary={
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(task.dueDate)}
-                          </Typography>
-                        }
-                      />
-                    </ListItem>
-                  </React.Fragment>
-                ))}
-              </List>
-            )}
-            {upcomingTasks.length > 0 && (
-              <Button size="small" onClick={handleNavigateToTasks} sx={{ mt: 1 }}>
-                View all tasks →
-              </Button>
-            )}
+                          }
+                          secondary={
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                              {formatDate(task.dueDate)}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+            </Box>
           </Paper>
-        </Grid>
 
-        {/* Right Column - Notes and Timer/Events */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2.5, mb: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+          <Paper sx={{ 
+            flex: 1,
+            p: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
+              Next Events
+            </Typography>
+            <Box sx={{ 
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                Calendar is clear. 🗓️
+              </Typography>
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Column 3: Recent Notes + Focus Timer */}
+        <Box sx={{ 
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1.5,
+          minHeight: 0,
+        }}>
+          <Paper sx={{ 
+            flex: 1,
+            p: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
               Recent Notes
             </Typography>
-            {recentNotes.length === 0 ? (
-              <Typography color="text.secondary" sx={{ py: 2 }}>
-                No notes yet. Start writing! 📝
-              </Typography>
-            ) : (
-              <List dense>
-                {recentNotes.map((note, index) => (
-                  <React.Fragment key={note.id}>
-                    {index > 0 && <Divider />}
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <NoteIcon />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Typography variant="body2" noWrap>
-                            {note.title || 'Untitled note'}
-                          </Typography>
-                        }
-                        secondary={
-                          <Typography variant="caption" color="text.secondary">
-                            {note.content ? note.content.substring(0, 60) : 'Empty note'}
-                            {note.content && note.content.length > 60 ? '...' : ''}
-                          </Typography>
-                        }
-                      />
-                    </ListItem>
-                  </React.Fragment>
-                ))}
-              </List>
-            )}
-            {recentNotes.length > 0 && (
-              <Button size="small" onClick={handleNavigateToNotes} sx={{ mt: 1 }}>
-                View all notes →
-              </Button>
-            )}
+            <Box sx={{ 
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              {recentNotes.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 1, fontSize: '0.8rem' }}>
+                  No notes yet. 📝
+                </Typography>
+              ) : (
+                <List dense sx={{ 
+                  py: 0, 
+                  flex: 1,
+                  overflow: 'auto',
+                  '&::-webkit-scrollbar': { width: '4px' },
+                  '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
+                }}>
+                  {recentNotes.slice(0, 5).map((note, index) => (
+                    <React.Fragment key={note.id}>
+                      {index > 0 && <Divider />}
+                      <ListItem sx={{ px: 0, py: 0.5 }}>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }} noWrap>
+                              {note.title || 'Untitled note'}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                              {note.content ? note.content.substring(0, 40) : 'Empty note'}
+                              {note.content && note.content.length > 40 ? '...' : ''}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+            </Box>
           </Paper>
 
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Paper sx={{ p: 2.5, height: '100%' }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                  Next Events
-                </Typography>
-                <Typography color="text.secondary" sx={{ py: 1 }}>
-                  Calendar is clear. 🗓️
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6}>
-              <Paper sx={{ p: 2.5, height: '100%' }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                  Focus Timer
-                </Typography>
-                <Typography variant="h3" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
-                  25:00
-                </Typography>
+          <Paper sx={{ 
+            flex: 1,
+            p: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
+              Focus Timer
+            </Typography>
+            <Box sx={{ 
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Typography variant="h3" sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '2.5rem' }}>
+                {formatTime(timeLeft)}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                 <Button
                   variant="contained"
-                  startIcon={<PlayArrowIcon />}
-                  onClick={handleNavigateToTimer}
-                  sx={{ mt: 1 }}
-                  fullWidth
+                  size="small"
+                  startIcon={timerRunning ? <ScheduleIcon /> : <PlayArrowIcon />}
+                  onClick={toggleTimer}
+                  sx={{ fontSize: '0.7rem' }}
                 >
-                  Start focus
+                  {timerRunning ? 'Pause' : 'Start'}
                 </Button>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={resetTimer}
+                  sx={{ fontSize: '0.7rem' }}
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={handleNavigateToTimer}
+                  sx={{ fontSize: '0.7rem' }}
+                >
+                  Full
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
+        </Box>
+      </Box>
     </Box>
   );
 };
