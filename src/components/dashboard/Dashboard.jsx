@@ -13,7 +13,6 @@ import {
   Chip,
   useTheme,
   useMediaQuery,
-  IconButton,
 } from '@mui/material';
 import {
   Task as TaskIcon,
@@ -225,12 +224,12 @@ const Dashboard = () => {
       height: 'calc(100vh - 180px)', 
       display: 'flex', 
       flexDirection: 'column',
-      gap: 1.5,
+      gap: 2,
     }}>
       {/* Row 1: Stats Cards */}
       <Box sx={{ 
         display: 'flex', 
-        gap: 1.5,
+        gap: 2,
         flexShrink: 0,
       }}>
         <StatCard
@@ -265,7 +264,7 @@ const Dashboard = () => {
       {/* Row 2: Quick Action Buttons */}
       <Box sx={{ 
         display: 'flex', 
-        gap: 1.5,
+        gap: 2,
         flexShrink: 0,
       }}>
         <Button
@@ -309,7 +308,7 @@ const Dashboard = () => {
       {/* Row 3: Main Content - Flexbox with equal columns */}
       <Box sx={{ 
         display: 'flex', 
-        gap: 1.5,
+        gap: 2,
         flex: 1,
         minHeight: 0,
       }}>
@@ -391,7 +390,7 @@ const Dashboard = () => {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: 1.5,
+          gap: 2,
           minHeight: 0,
         }}>
           <Paper sx={{ 
@@ -476,7 +475,7 @@ const Dashboard = () => {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: 1.5,
+          gap: 2,
           minHeight: 0,
         }}>
           <Paper sx={{ 

@@ -22,7 +22,10 @@ const AppContent = () => {
   // Listen for navigation changes
   useEffect(() => {
     const handleNavigationChange = (event) => {
-      setCurrentTab(event.detail);
+      const newTab = event.detail;
+      setCurrentTab(newTab);
+      // Update the navigation component's internal state via custom event
+      window.dispatchEvent(new CustomEvent('updateNavigationTab', { detail: newTab }));
     };
 
     window.addEventListener('navigationChange', handleNavigationChange);
@@ -109,7 +112,7 @@ const AppContent = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <Navigation />
+        <Navigation currentTab={currentTab} />
         <Box 
           component="main" 
           sx={{ 

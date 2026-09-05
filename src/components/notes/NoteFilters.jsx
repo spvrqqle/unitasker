@@ -11,7 +11,6 @@ import {
   MenuItem,
   useTheme,
   useMediaQuery,
-  Grid,
 } from '@mui/material';
 import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 
@@ -40,55 +39,55 @@ const NoteFilters = ({
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Grid container spacing={2} alignItems="center">
-        {/* Search */}
-        <Grid item xs={12} sm={7} md={8}>
-          <TextField
-            placeholder="Search notes by title, content, or tags..."
-            value={filters.searchTerm || ''}
-            onChange={handleSearchChange}
-            size="small"
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: filters.searchTerm && (
-                <InputAdornment position="end">
-                  <ClearIcon 
-                    sx={{ cursor: 'pointer' }} 
-                    onClick={handleClearSearch}
-                  />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 2,
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: 'center',
+      }}>
+        {/* Search - takes more space */}
+        <TextField
+          placeholder="Search notes by title, content, or tags..."
+          value={filters.searchTerm || ''}
+          onChange={handleSearchChange}
+          size="small"
+          sx={{ flex: 3 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: filters.searchTerm && (
+              <InputAdornment position="end">
+                <ClearIcon 
+                  sx={{ cursor: 'pointer' }} 
+                  onClick={handleClearSearch}
+                />
+              </InputAdornment>
+            ),
+          }}
+        />
 
-        {/* Tag Filter */}
-        <Grid item xs={12} sm={5} md={4}>
-          <FormControl size="small" fullWidth>
-            <InputLabel id="tag-filter-label">Filter by Tag</InputLabel>
-            <Select
-              labelId="tag-filter-label"
-              id="tag-filter-select"
-              value={filters.selectedTag || ''}
-              onChange={handleTagFilterChange}
-              label="Filter by Tag"
-              displayEmpty
-            >
-              <MenuItem value="">All Tags</MenuItem>
-              {availableTags.map((tag) => (
-                <MenuItem key={tag} value={tag}>
-                  #{tag}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+        {/* Tag Filter - takes less space */}
+        <FormControl size="small" sx={{ flex: 1, minWidth: 150 }}>
+          <InputLabel id="tag-filter-label">Filter by Tag</InputLabel>
+          <Select
+            labelId="tag-filter-label"
+            id="tag-filter-select"
+            value={filters.selectedTag || ''}
+            onChange={handleTagFilterChange}
+            label="Filter by Tag"
+          >
+            <MenuItem value="">All Tags</MenuItem>
+            {availableTags.map((tag) => (
+              <MenuItem key={tag} value={tag}>
+                #{tag}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
 
       {/* Active Filters Display */}
       {hasActiveFilters && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Paper,
   BottomNavigation,
@@ -30,13 +30,13 @@ import {
   ChevronRight as ChevronRightIcon
 } from '@mui/icons-material';
 
-const Navigation = () => {
+const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   
-  const [currentTab, setCurrentTab] = useState(0);
+  const [currentTab, setCurrentTab] = useState(propCurrentTab);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -49,6 +49,23 @@ const Navigation = () => {
     { label: 'Timer', icon: <TimerIcon />, value: 5 },
     { label: 'Settings', icon: <SettingsIcon />, value: 6 },
   ];
+
+  // Update internal state when prop changes
+  useEffect(() => {
+    setCurrentTab(propCurrentTab);
+  }, [propCurrentTab]);
+
+  // Listen for navigation updates from App
+  useEffect(() => {
+    const handleUpdateTab = (event) => {
+      setCurrentTab(event.detail);
+    };
+
+    window.addEventListener('updateNavigationTab', handleUpdateTab);
+    return () => {
+      window.removeEventListener('updateNavigationTab', handleUpdateTab);
+    };
+  }, []);
 
   const handleNavigation = (event, newValue) => {
     setCurrentTab(newValue);
