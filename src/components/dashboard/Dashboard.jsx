@@ -11,6 +11,8 @@ import {
   ListItemText,
   Divider,
   Chip,
+  Skeleton,
+  Alert,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -26,94 +28,37 @@ import {
   PlayArrow as PlayArrowIcon,
   Timer as TimerIcon,
 } from '@mui/icons-material';
-import { useTasks } from '../../hooks/useTasks';
-import { useNotes } from '../../hooks/useNotes';
+import { useDashboardData } from '../../hooks/useDashboardData';
+import { createTimerSession, completeTimerSession, interruptTimerSession } from '../../services/timer.service';
 
 const Dashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
-  const { tasks } = useTasks();
-  const { notes } = useNotes();
+  const {
+    stats,
+    todayTasks,
+    upcomingTasks,
+    recentNotes,
+    upcomingEvents,
+    loading,
+    error,
+    refetch,
+  } = useDashboardData();
 
-  const [stats, setStats] = useState({
-    openTasks: 0,
-    dueToday: 0,
-    notesCount: 0,
-    eventsCount: 0,
-  });
-
-  const [todayTasks, setTodayTasks] = useState([]);
-  const [upcomingTasks, setUpcomingTasks] = useState([]);
-  const [recentNotes, setRecentNotes] = useState([]);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
+  const [timerSessionId, setTimerSessionId] = useState(null);
 
-  useEffect(() => {
-    // Calculate stats
-    const openTasks = tasks.filter(t => t.status !== 'Completed').length;
-    const dueToday = tasks.filter(t => {
-      if (!t.dueDate || t.status === 'Completed') return false;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const dueDate = new Date(t.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() === today.getTime();
-    }).length;
-    const notesCount = notes.length;
-
-    setStats({
-      openTasks,
-      dueToday,
-      notesCount,
-      eventsCount: 0,
-    });
-
-    // Get today's tasks
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const todayTasksList = tasks.filter(t => {
-      if (!t.dueDate || t.status === 'Completed') return false;
-      const dueDate = new Date(t.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() <= today.getTime() || 
-             (dueDate.getTime() >= today.getTime() && dueDate.getTime() < tomorrow.getTime());
-    }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-    setTodayTasks(todayTasksList);
-
-    // Get upcoming tasks
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    
-    const upcomingTasksList = tasks.filter(t => {
-      if (!t.dueDate || t.status === 'Completed') return false;
-      const dueDate = new Date(t.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate.getTime() > today.getTime() && 
-             dueDate.getTime() <= nextWeek.getTime();
-    }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-    setUpcomingTasks(upcomingTasksList);
-
-    // Get recent notes
-    const recentNotesList = [...notes]
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    setRecentNotes(recentNotesList);
-
-  }, [tasks, notes]);
-
-  // Timer logic
+  // Timer logic with database logging
   useEffect(() => {
     let interval;
     if (timerRunning && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
-    } else if (timeLeft === 0) {
+    } else if (timeLeft === 0 && timerRunning) {
+      // Timer completed - log the session
+      logTimerSession();
       setTimerRunning(false);
     }
     return () => clearInterval(interval);
@@ -125,13 +70,41 @@ const Dashboard = () => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const toggleTimer = () => {
-    setTimerRunning(!timerRunning);
+  const startTimer = async () => {
+    try {
+      // Create a new timer session in IndexedDB
+      const session = await createTimerSession(25 * 60);
+      setTimerSessionId(session.id);
+      setTimerRunning(true);
+    } catch (err) {
+      console.error('Failed to start timer session:', err);
+    }
+  };
+
+  const logTimerSession = async () => {
+    try {
+      if (!timerSessionId) return;
+      await completeTimerSession(timerSessionId);
+    } catch (err) {
+      console.error('Failed to complete timer session:', err);
+    }
+  };
+
+  const pauseTimer = async () => {
+    try {
+      if (timerSessionId) {
+        await interruptTimerSession(timerSessionId);
+      }
+      setTimerRunning(false);
+    } catch (err) {
+      console.error('Failed to pause timer:', err);
+    }
   };
 
   const resetTimer = () => {
     setTimerRunning(false);
     setTimeLeft(25 * 60);
+    setTimerSessionId(null);
   };
 
   const formatDate = (dateString) => {
@@ -146,6 +119,12 @@ const Dashboard = () => {
     if (dueDate.getTime() < today.getTime()) return 'Overdue';
     
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatEventDate = (dateString) => {
+    if (!dateString) return 'No date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const getPriorityColor = (priority) => {
@@ -173,6 +152,10 @@ const Dashboard = () => {
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: 5 }));
   };
 
+  const handleNavigateToCalendar = () => {
+    window.dispatchEvent(new CustomEvent('navigationChange', { detail: 3 }));
+  };
+
   const StatCard = ({ icon, title, value, onClick, color }) => (
     <Card
       sx={{
@@ -195,9 +178,13 @@ const Dashboard = () => {
         '&:last-child': { pb: 2 }
       }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-            {value}
-          </Typography>
+          {loading ? (
+            <Skeleton variant="text" width={40} height={40} />
+          ) : (
+            <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              {value}
+            </Typography>
+          )}
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
             {title}
           </Typography>
@@ -218,6 +205,197 @@ const Dashboard = () => {
       </CardContent>
     </Card>
   );
+
+  const renderTaskList = (tasks, emptyMessage, maxItems = 8) => {
+    if (loading) {
+      return (
+        <Box sx={{ py: 1 }}>
+          <Skeleton variant="text" height={30} />
+          <Skeleton variant="text" height={30} />
+          <Skeleton variant="text" height={30} />
+        </Box>
+      );
+    }
+
+    if (error) {
+      return (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          Failed to load data
+        </Alert>
+      );
+    }
+
+    if (tasks.length === 0) {
+      return (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, fontSize: '0.8rem' }}>
+          {emptyMessage}
+        </Typography>
+      );
+    }
+
+    return (
+      <List dense sx={{ 
+        py: 0, 
+        flex: 1,
+        overflow: 'auto',
+        '&::-webkit-scrollbar': { width: '4px' },
+        '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
+      }}>
+        {tasks.slice(0, maxItems).map((task, index) => (
+          <React.Fragment key={task.id}>
+            {index > 0 && <Divider />}
+            <ListItem sx={{ px: 0, py: 0.5 }}>
+              <ListItemText
+                primary={
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: '0.8rem',
+                      textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    {task.title}
+                    {task.priority && (
+                      <Chip
+                        label={task.priority}
+                        size="small"
+                        color={getPriorityColor(task.priority)}
+                        sx={{ height: 16, '& .MuiChip-label': { fontSize: '0.5rem', px: 0.5 } }}
+                      />
+                    )}
+                  </Typography>
+                }
+                secondary={
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                    {formatDate(task.dueDate)}
+                  </Typography>
+                }
+              />
+            </ListItem>
+          </React.Fragment>
+        ))}
+      </List>
+    );
+  };
+
+  const renderNoteList = (notes, emptyMessage, maxItems = 5) => {
+    if (loading) {
+      return (
+        <Box sx={{ py: 1 }}>
+          <Skeleton variant="text" height={30} />
+          <Skeleton variant="text" height={30} />
+          <Skeleton variant="text" height={30} />
+        </Box>
+      );
+    }
+
+    if (error) {
+      return (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          Failed to load data
+        </Alert>
+      );
+    }
+
+    if (notes.length === 0) {
+      return (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, fontSize: '0.8rem' }}>
+          {emptyMessage}
+        </Typography>
+      );
+    }
+
+    return (
+      <List dense sx={{ 
+        py: 0, 
+        flex: 1,
+        overflow: 'auto',
+        '&::-webkit-scrollbar': { width: '4px' },
+        '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
+      }}>
+        {notes.slice(0, maxItems).map((note, index) => (
+          <React.Fragment key={note.id}>
+            {index > 0 && <Divider />}
+            <ListItem sx={{ px: 0, py: 0.5 }}>
+              <ListItemText
+                primary={
+                  <Typography variant="body2" sx={{ fontSize: '0.8rem' }} noWrap>
+                    {note.title || 'Untitled note'}
+                  </Typography>
+                }
+                secondary={
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                    {note.content ? note.content.substring(0, 40) : 'Empty note'}
+                    {note.content && note.content.length > 40 ? '...' : ''}
+                  </Typography>
+                }
+              />
+            </ListItem>
+          </React.Fragment>
+        ))}
+      </List>
+    );
+  };
+
+  const renderEventList = (events, emptyMessage, maxItems = 3) => {
+    if (loading) {
+      return (
+        <Box sx={{ py: 1 }}>
+          <Skeleton variant="text" height={30} />
+          <Skeleton variant="text" height={30} />
+        </Box>
+      );
+    }
+
+    if (error) {
+      return (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          Failed to load data
+        </Alert>
+      );
+    }
+
+    if (events.length === 0) {
+      return (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, fontSize: '0.8rem' }}>
+          {emptyMessage}
+        </Typography>
+      );
+    }
+
+    return (
+      <List dense sx={{ 
+        py: 0, 
+        flex: 1,
+        overflow: 'auto',
+        '&::-webkit-scrollbar': { width: '4px' },
+        '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
+      }}>
+        {events.slice(0, maxItems).map((event, index) => (
+          <React.Fragment key={event.id}>
+            {index > 0 && <Divider />}
+            <ListItem sx={{ px: 0, py: 0.5 }}>
+              <ListItemText
+                primary={
+                  <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                    {event.title}
+                  </Typography>
+                }
+                secondary={
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                    {formatEventDate(event.date)}
+                  </Typography>
+                }
+              />
+            </ListItem>
+          </React.Fragment>
+        ))}
+      </List>
+    );
+  };
 
   return (
     <Box sx={{ 
@@ -257,6 +435,7 @@ const Dashboard = () => {
           icon={<EventIcon sx={{ fontSize: 24 }} />}
           title="Events"
           value={stats.eventsCount}
+          onClick={handleNavigateToCalendar}
           color="success.main"
         />
       </Box>
@@ -297,102 +476,57 @@ const Dashboard = () => {
         <Button
           variant="outlined"
           startIcon={<TimerIcon />}
-          onClick={toggleTimer}
+          onClick={timerRunning ? pauseTimer : startTimer}
           sx={{ flex: 1, py: 1 }}
           size="small"
         >
-          {timerRunning ? formatTime(timeLeft) : '25:00'}
+          {timerRunning ? formatTime(timeLeft) : 'Start 25:00'}
         </Button>
       </Box>
 
-      {/* Row 3: Main Content - Flexbox with equal columns */}
+      {/* Row 3: Main Content - 2 Columns */}
       <Box sx={{ 
-        display: 'flex', 
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
         gap: 2,
         flex: 1,
         minHeight: 0,
       }}>
-        {/* Column 1: Today's Tasks */}
-        <Paper sx={{ 
-          flex: 1,
-          p: 1.5,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
-            Today's Tasks
-          </Typography>
-          <Box sx={{ 
-            flex: 1,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            {todayTasks.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ py: 2, fontSize: '0.8rem' }}>
-                Nothing due today. 🌟
-              </Typography>
-            ) : (
-              <List dense sx={{ 
-                py: 0, 
-                flex: 1,
-                overflow: 'auto',
-                '&::-webkit-scrollbar': { width: '4px' },
-                '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
-              }}>
-                {todayTasks.slice(0, 8).map((task, index) => (
-                  <React.Fragment key={task.id}>
-                    {index > 0 && <Divider />}
-                    <ListItem sx={{ px: 0, py: 0.5 }}>
-                      <ListItemText
-                        primary={
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '0.8rem',
-                              textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
-                            {task.title}
-                            <Chip
-                              label={task.priority}
-                              size="small"
-                              color={getPriorityColor(task.priority)}
-                              sx={{ height: 16, '& .MuiChip-label': { fontSize: '0.5rem', px: 0.5 } }}
-                            />
-                          </Typography>
-                        }
-                        secondary={
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
-                            {formatDate(task.dueDate)}
-                          </Typography>
-                        }
-                      />
-                    </ListItem>
-                  </React.Fragment>
-                ))}
-              </List>
-            )}
-            {todayTasks.length > 8 && (
-              <Button size="small" onClick={handleNavigateToTasks} sx={{ fontSize: '0.7rem', flexShrink: 0 }}>
-                View all →
-              </Button>
-            )}
-          </Box>
-        </Paper>
-
-        {/* Column 2: Upcoming Deadlines + Next Events */}
+        {/* Left Column */}
         <Box sx={{ 
-          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
           minHeight: 0,
         }}>
+          {/* Today's Tasks */}
+          <Paper sx={{ 
+            flex: 1,
+            p: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
+              Today's Tasks
+            </Typography>
+            <Box sx={{ 
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              {renderTaskList(todayTasks, 'Nothing due today. Enjoy the calm.')}
+            </Box>
+            {todayTasks.length > 0 && (
+              <Button size="small" onClick={handleNavigateToTasks} sx={{ fontSize: '0.7rem', flexShrink: 0, mt: 1 }}>
+                View all →
+              </Button>
+            )}
+          </Paper>
+
+          {/* Upcoming Deadlines */}
           <Paper sx={{ 
             flex: 1,
             p: 1.5,
@@ -410,74 +544,24 @@ const Dashboard = () => {
               display: 'flex',
               flexDirection: 'column',
             }}>
-              {upcomingTasks.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ py: 1, fontSize: '0.8rem' }}>
-                  No upcoming deadlines. 🎉
-                </Typography>
-              ) : (
-                <List dense sx={{ 
-                  py: 0, 
-                  flex: 1,
-                  overflow: 'auto',
-                  '&::-webkit-scrollbar': { width: '4px' },
-                  '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
-                }}>
-                  {upcomingTasks.slice(0, 5).map((task, index) => (
-                    <React.Fragment key={task.id}>
-                      {index > 0 && <Divider />}
-                      <ListItem sx={{ px: 0, py: 0.5 }}>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                              {task.title}
-                            </Typography>
-                          }
-                          secondary={
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
-                              {formatDate(task.dueDate)}
-                            </Typography>
-                          }
-                        />
-                      </ListItem>
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
+              {renderTaskList(upcomingTasks, 'No upcoming deadlines.')}
             </Box>
-          </Paper>
-
-          <Paper sx={{ 
-            flex: 1,
-            p: 1.5,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            minHeight: 0,
-          }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
-              Next Events
-            </Typography>
-            <Box sx={{ 
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                Calendar is clear. 🗓️
-              </Typography>
-            </Box>
+            {upcomingTasks.length > 0 && (
+              <Button size="small" onClick={handleNavigateToTasks} sx={{ fontSize: '0.7rem', flexShrink: 0, mt: 1 }}>
+                View all →
+              </Button>
+            )}
           </Paper>
         </Box>
 
-        {/* Column 3: Recent Notes + Focus Timer */}
+        {/* Right Column */}
         <Box sx={{ 
-          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
           minHeight: 0,
         }}>
+          {/* Recent Notes */}
           <Paper sx={{ 
             flex: 1,
             p: 1.5,
@@ -495,43 +579,43 @@ const Dashboard = () => {
               display: 'flex',
               flexDirection: 'column',
             }}>
-              {recentNotes.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ py: 1, fontSize: '0.8rem' }}>
-                  No notes yet. 📝
-                </Typography>
-              ) : (
-                <List dense sx={{ 
-                  py: 0, 
-                  flex: 1,
-                  overflow: 'auto',
-                  '&::-webkit-scrollbar': { width: '4px' },
-                  '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
-                }}>
-                  {recentNotes.slice(0, 5).map((note, index) => (
-                    <React.Fragment key={note.id}>
-                      {index > 0 && <Divider />}
-                      <ListItem sx={{ px: 0, py: 0.5 }}>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }} noWrap>
-                              {note.title || 'Untitled note'}
-                            </Typography>
-                          }
-                          secondary={
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
-                              {note.content ? note.content.substring(0, 40) : 'Empty note'}
-                              {note.content && note.content.length > 40 ? '...' : ''}
-                            </Typography>
-                          }
-                        />
-                      </ListItem>
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
+              {renderNoteList(recentNotes, 'No notes yet.')}
             </Box>
+            {recentNotes.length > 0 && (
+              <Button size="small" onClick={handleNavigateToNotes} sx={{ fontSize: '0.7rem', flexShrink: 0, mt: 1 }}>
+                View all →
+              </Button>
+            )}
           </Paper>
 
+          {/* Next Events */}
+          <Paper sx={{ 
+            flex: 1,
+            p: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', flexShrink: 0 }}>
+              Next Events
+            </Typography>
+            <Box sx={{ 
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              {renderEventList(upcomingEvents, 'Calendar is clear.')}
+            </Box>
+            {upcomingEvents.length > 0 && (
+              <Button size="small" onClick={handleNavigateToCalendar} sx={{ fontSize: '0.7rem', flexShrink: 0, mt: 1 }}>
+                View all →
+              </Button>
+            )}
+          </Paper>
+
+          {/* Focus Timer */}
           <Paper sx={{ 
             flex: 1,
             p: 1.5,
@@ -558,18 +642,10 @@ const Dashboard = () => {
                   variant="contained"
                   size="small"
                   startIcon={timerRunning ? <ScheduleIcon /> : <PlayArrowIcon />}
-                  onClick={toggleTimer}
+                  onClick={timerRunning ? pauseTimer : startTimer}
                   sx={{ fontSize: '0.7rem' }}
                 >
-                  {timerRunning ? 'Pause' : 'Start'}
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={resetTimer}
-                  sx={{ fontSize: '0.7rem' }}
-                >
-                  Reset
+                  {timerRunning ? 'Pause' : 'Start focus'}
                 </Button>
                 <Button
                   variant="text"
@@ -577,7 +653,7 @@ const Dashboard = () => {
                   onClick={handleNavigateToTimer}
                   sx={{ fontSize: '0.7rem' }}
                 >
-                  Full
+                  Open full timer
                 </Button>
               </Box>
             </Box>

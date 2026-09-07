@@ -31,6 +31,7 @@ export async function getDB() {
       if (!db.objectStoreNames.contains('events')) {
         const eventStore = db.createObjectStore('events', { keyPath: 'id' });
         eventStore.createIndex('by-date', 'date');
+        eventStore.createIndex('by-userId', 'userId');
       }
 
       // Resources store - without 'data' field (file references only)
@@ -48,7 +49,6 @@ export async function getDB() {
         return store.getAll().then(resources => {
           store.clear();
           resources.forEach(resource => {
-            // Remove the 'data' field if it exists
             const { data, ...resourceWithoutData } = resource;
             store.add(resourceWithoutData);
           });
@@ -63,6 +63,13 @@ export async function getDB() {
       // Settings store
       if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'id' });
+      }
+
+      // Timer sessions store (for tracking focus sessions)
+      if (!db.objectStoreNames.contains('timerSessions')) {
+        const timerSessionStore = db.createObjectStore('timerSessions', { keyPath: 'id' });
+        timerSessionStore.createIndex('by-date', 'startedAt');
+        timerSessionStore.createIndex('by-status', 'status');
       }
     },
   });
