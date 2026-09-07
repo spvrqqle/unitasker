@@ -10,6 +10,7 @@ import ThemeToggle from './components/common/ThemeToggle';
 import Dashboard from './components/dashboard/Dashboard';
 import TaskList from './components/tasks/TaskList';
 import NoteList from './components/notes/NoteList';
+import CalendarView from './components/calendar/CalendarView';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
@@ -24,7 +25,6 @@ const AppContent = () => {
     const handleNavigationChange = (event) => {
       const newTab = event.detail;
       setCurrentTab(newTab);
-      // Update the navigation component's internal state via custom event
       window.dispatchEvent(new CustomEvent('updateNavigationTab', { detail: newTab }));
     };
 
@@ -90,7 +90,7 @@ const AppContent = () => {
       case 2:
         return <NoteList />;
       case 3:
-        return <Box sx={{ p: 3 }}><Typography>Calendar View (Coming Soon)</Typography></Box>;
+        return <CalendarView />;
       case 4:
         return <Box sx={{ p: 3 }}><Typography>Resources View (Coming Soon)</Typography></Box>;
       case 5:
