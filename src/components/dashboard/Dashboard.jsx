@@ -458,7 +458,7 @@ const Dashboard = () => {
           sx={{ flex: 1.2, py: 0.75, fontSize: '0.8rem', fontWeight: 600 }}
           size="small"
         >
-          + New task
+          New task
         </Button>
         <Button
           variant="outlined"
