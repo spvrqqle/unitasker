@@ -20,6 +20,7 @@ const NoteCard = ({ note, onEdit, onDelete }) => {
   const theme = useTheme();
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'Just now';
     const date = new Date(dateString);
     const now = new Date();
     const diff = now - date;

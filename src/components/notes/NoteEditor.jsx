@@ -109,8 +109,8 @@ const NoteEditor = ({
 
     const dataToSave = {
       title: formData.title.trim(),
-      content: formData.content,
-      tags: formData.tags,
+      content: formData.content || '',
+      tags: formData.tags || [],
     };
 
     onSave(dataToSave);
@@ -168,12 +168,13 @@ const NoteEditor = ({
             <Autocomplete
               multiple
               freeSolo
-              options={existingTags}
-              value={formData.tags}
+              options={existingTags || []}
+              value={formData.tags || []}
               onChange={handleTagsChange}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
                   <Chip
+                    key={index}
                     label={option}
                     {...getTagProps({ index })}
                     onDelete={() => handleRemoveTag(option)}
@@ -188,57 +189,30 @@ const NoteEditor = ({
                   label="Tags"
                   placeholder="Add tags..."
                   helperText="Type a tag and press Enter to add"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && e.target.value) {
-                      e.preventDefault();
-                      const value = e.target.value.trim();
-                      if (value && !formData.tags.includes(value)) {
-                        setFormData(prev => ({
-                          ...prev,
-                          tags: [...prev.tags, value]
-                        }));
-                        // Clear the input
-                        setTimeout(() => {
-                          const input = e.target.querySelector('input');
-                          if (input) input.value = '';
-                        }, 0);
-                      }
-                    }
-                  }}
                 />
               )}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.target.value) {
+                  e.preventDefault();
+                  const value = e.target.value.trim();
+                  if (value && !formData.tags.includes(value)) {
+                    setFormData(prev => ({
+                      ...prev,
+                      tags: [...prev.tags, value]
+                    }));
+                    // Clear the input
+                    setTimeout(() => {
+                      const input = document.querySelector('input[placeholder="Add tags..."]');
+                      if (input) input.value = '';
+                    }, 0);
+                  }
+                }
+              }}
             />
-            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-              <TextField
-                size="small"
-                placeholder="Add custom tag"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={handleKeyPress}
-                sx={{ flex: 1 }}
-              />
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleAddTag}
-                startIcon={<AddIcon />}
-                disabled={!newTag.trim()}
-              >
-                Add
-              </Button>
-            </Box>
           </Box>
 
-          {/* Existing Tags Display */}
-          {formData.tags.length > 0 && (
+          {/* Current Tags Display */}
+          {formData.tags && formData.tags.length > 0 && (
             <Box>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                 Current Tags:

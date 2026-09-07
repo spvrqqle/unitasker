@@ -21,9 +21,9 @@ export function useNotes() {
       setLoading(true);
       setError(null);
       const loadedNotes = await getAllNotes();
-      setNotes(loadedNotes);
+      setNotes(loadedNotes || []);
       const loadedTags = await getAllTags();
-      setTags(loadedTags);
+      setTags(loadedTags || []);
     } catch (err) {
       setError(err.message);
       console.error('Failed to load notes:', err);
@@ -42,10 +42,10 @@ export function useNotes() {
     try {
       setError(null);
       const newNote = await createNote(noteData);
-      setNotes(prev => [...prev, newNote]);
+      setNotes(prev => [...(prev || []), newNote]);
       // Refresh tags
       const updatedTags = await getAllTags();
-      setTags(updatedTags);
+      setTags(updatedTags || []);
       return newNote;
     } catch (err) {
       setError(err.message);
@@ -58,12 +58,12 @@ export function useNotes() {
     try {
       setError(null);
       const updatedNote = await updateNote(id, updates);
-      setNotes(prev => prev.map(note => 
+      setNotes(prev => (prev || []).map(note => 
         note.id === id ? updatedNote : note
       ));
       // Refresh tags
       const updatedTags = await getAllTags();
-      setTags(updatedTags);
+      setTags(updatedTags || []);
       return updatedNote;
     } catch (err) {
       setError(err.message);
@@ -76,10 +76,10 @@ export function useNotes() {
     try {
       setError(null);
       await deleteNote(id);
-      setNotes(prev => prev.filter(note => note.id !== id));
+      setNotes(prev => (prev || []).filter(note => note.id !== id));
       // Refresh tags
       const updatedTags = await getAllTags();
-      setTags(updatedTags);
+      setTags(updatedTags || []);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -100,7 +100,7 @@ export function useNotes() {
   const searchNotesByQuery = useCallback(async (query) => {
     try {
       if (!query || query.trim() === '') {
-        return notes;
+        return notes || [];
       }
       return await searchNotes(query);
     } catch (err) {
@@ -115,8 +115,8 @@ export function useNotes() {
   }, [loadNotes]);
 
   return {
-    notes,
-    tags,
+    notes: notes || [],
+    tags: tags || [],
     loading,
     error,
     addNote,

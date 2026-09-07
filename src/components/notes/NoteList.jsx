@@ -10,7 +10,6 @@ import {
   useTheme,
   useMediaQuery,
   Grid,
-  Divider,
   IconButton,
 } from '@mui/material';
 import {
@@ -26,7 +25,6 @@ import { useNotes } from '../../hooks/useNotes';
 const NoteList = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   
   const {
     notes,
@@ -36,7 +34,6 @@ const NoteList = () => {
     addNote,
     editNote,
     removeNote,
-    searchNotesByQuery,
     refreshNotes,
   } = useNotes();
 
@@ -50,7 +47,7 @@ const NoteList = () => {
 
   // Filter notes based on search and tag
   useEffect(() => {
-    let result = notes;
+    let result = notes || [];
     
     // Tag filter
     if (filters.selectedTag) {
