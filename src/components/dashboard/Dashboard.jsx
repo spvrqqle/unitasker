@@ -450,12 +450,22 @@ const Dashboard = () => {
         display: 'flex', 
         gap: 1.5,
         flexShrink: 0,
+        alignItems: 'center',
       }}>
         <Button
           variant="contained"
-          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+          startIcon={<AddIcon sx={{ fontSize: 20 }} />}
           onClick={handleNavigateToTasks}
-          sx={{ flex: 1.2, py: 0.75, fontSize: '0.8rem', fontWeight: 600 }}
+          sx={{ 
+            flex: 1.2, 
+            py: 0.75, 
+            fontSize: '0.8rem', 
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+          }}
           size="small"
         >
           New task
@@ -464,7 +474,15 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={<NoteIcon sx={{ fontSize: 18 }} />}
           onClick={handleNavigateToNotes}
-          sx={{ flex: 1, py: 0.75, fontSize: '0.75rem' }}
+          sx={{ 
+            flex: 1, 
+            py: 0.75, 
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+          }}
           size="small"
         >
           Notes
@@ -473,7 +491,15 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={<FolderIcon sx={{ fontSize: 18 }} />}
           onClick={handleNavigateToResources}
-          sx={{ flex: 1, py: 0.75, fontSize: '0.75rem' }}
+          sx={{ 
+            flex: 1, 
+            py: 0.75, 
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+          }}
           size="small"
         >
           Resources
@@ -482,7 +508,16 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={<TimerIcon sx={{ fontSize: 18 }} />}
           onClick={timerRunning ? pauseTimer : startTimer}
-          sx={{ flex: 1, py: 0.75, fontSize: '0.75rem', fontWeight: timerRunning ? 600 : 400 }}
+          sx={{ 
+            flex: 1, 
+            py: 0.75, 
+            fontSize: '0.75rem', 
+            fontWeight: timerRunning ? 600 : 400,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+          }}
           size="small"
         >
           {timerRunning ? formatTime(timeLeft) : 'Start 25:00'}
