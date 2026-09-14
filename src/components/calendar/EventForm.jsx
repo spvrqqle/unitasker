@@ -134,7 +134,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             fullWidth
             autoFocus
             placeholder="Enter event title..."
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
 
           {/* Description */}
@@ -146,7 +146,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             rows={3}
             fullWidth
             placeholder="Add details about this event..."
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
 
           {/* Date */}
@@ -158,7 +158,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             error={!!errors.date}
             helperText={errors.date}
             fullWidth
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
 
           {/* Time */}
@@ -168,7 +168,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             value={formData.time}
             onChange={handleChange('time')}
             fullWidth
-            InputLabelProps={{ shrink: true }}
+            slotProps={{ inputLabel: { shrink: true } }}
           />
 
           {/* Color */}
