@@ -16,7 +16,6 @@ import {
   Event as EventIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
-  Close as CloseIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
 
@@ -25,7 +24,6 @@ const EventList = ({
   selectedDate, 
   onEventClick, 
   onEventDelete, 
-  onClose,
   onAddEvent 
 }) => {
   const theme = useTheme();
@@ -36,7 +34,6 @@ const EventList = ({
       weekday: 'long',
       month: 'long', 
       day: 'numeric',
-      year: 'numeric'
     });
   };
 
@@ -54,74 +51,78 @@ const EventList = ({
 
   return (
     <Paper sx={{ 
-      p: 2, 
+      p: 1.5, 
       bgcolor: 'background.paper', 
       border: `1px solid ${theme.palette.divider}`,
       borderRadius: 2,
       width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
       {/* Header */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        mb: 2,
+        mb: 1,
+        flexShrink: 0,
       }}>
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>
             {formatDate(selectedDate)}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
             {events.length === 0 
               ? 'Nothing scheduled.' 
               : `${events.length} ${events.length === 1 ? 'event' : 'events'}`}
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => onAddEvent(selectedDate)}
-          >
-            Add Event
-          </Button>
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+          onClick={() => onAddEvent(selectedDate)}
+          sx={{ fontSize: '0.7rem', py: 0.5 }}
+        >
+          Add Event
+        </Button>
       </Box>
 
       {/* Event List */}
       {events.length === 0 ? (
         <Box sx={{ 
+          flex: 1,
           display: 'flex', 
-          flexDirection: 'column',
           alignItems: 'center', 
           justifyContent: 'center',
-          py: 4,
+          gap: 1,
         }}>
-          <EventIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-          <Typography color="text.secondary" variant="body2">
+          <EventIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
+          <Typography color="text.secondary" variant="body2" sx={{ fontSize: '0.8rem' }}>
             Nothing scheduled for this day
           </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => onAddEvent(selectedDate)}
-            sx={{ mt: 2 }}
-          >
-            Add Event
-          </Button>
         </Box>
       ) : (
-        <List dense sx={{ py: 0 }}>
+        <List 
+          dense 
+          sx={{ 
+            py: 0,
+            flex: 1,
+            overflow: 'auto',
+            '&::-webkit-scrollbar': { width: '4px' },
+            '&::-webkit-scrollbar-thumb': { 
+              background: theme.palette.divider, 
+              borderRadius: '2px' 
+            },
+          }}
+        >
           {events.map((event, index) => (
             <React.Fragment key={event.id}>
-              {index > 0 && <Divider />}
+              {index > 0 && <Divider sx={{ opacity: 0.5 }} />}
               <ListItem
                 sx={{
-                  py: 1.5,
+                  py: 0.75,
                   px: 1,
                   borderRadius: 1,
                   '&:hover': {
@@ -129,11 +130,11 @@ const EventList = ({
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 36 }}>
+                <ListItemIcon sx={{ minWidth: 28 }}>
                   <Box
                     sx={{
-                      width: 12,
-                      height: 12,
+                      width: 10,
+                      height: 10,
                       borderRadius: '50%',
                       bgcolor: event.color || '#0d6efd',
                     }}
@@ -141,19 +142,23 @@ const EventList = ({
                 </ListItemIcon>
                 <ListItemText
                   primary={
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
                       {event.title}
                     </Typography>
                   }
                   secondary={
                     <Box>
                       {event.description && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                           {event.description}
                         </Typography>
                       )}
                       {event.time && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.3 }}>
+                        <Typography 
+                          variant="caption" 
+                          color="text.secondary" 
+                          sx={{ display: 'block', mt: 0.2, fontSize: '0.65rem' }}
+                        >
                           🕐 {formatTime(event.date)}
                         </Typography>
                       )}
@@ -165,16 +170,16 @@ const EventList = ({
                   <IconButton 
                     size="small" 
                     onClick={() => onEventClick(event)}
-                    sx={{ color: 'text.secondary' }}
+                    sx={{ color: 'text.secondary', p: 0.5 }}
                   >
-                    <EditIcon fontSize="small" />
+                    <EditIcon sx={{ fontSize: 16 }} />
                   </IconButton>
                   <IconButton 
                     size="small" 
                     onClick={() => onEventDelete(event.id)}
-                    sx={{ color: 'text.secondary' }}
+                    sx={{ color: 'text.secondary', p: 0.5 }}
                   >
-                    <DeleteIcon fontSize="small" />
+                    <DeleteIcon sx={{ fontSize: 16 }} />
                   </IconButton>
                 </Box>
               </ListItem>

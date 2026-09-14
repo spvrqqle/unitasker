@@ -24,7 +24,7 @@ const CalendarView = () => {
   } = useEvents();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -52,7 +52,7 @@ const CalendarView = () => {
   };
 
   const handleAddEvent = (date) => {
-    setFormDate(date);
+    setFormDate(date || selectedDate);
     setEditingEvent(null);
     setFormOpen(true);
   };
@@ -96,38 +96,44 @@ const CalendarView = () => {
     setFormDate(null);
   };
 
-  const handleCloseEventList = () => {
-    setSelectedDate(null);
-  };
-
   return (
     <Box sx={{ 
-      width: '100%',
+      height: 'calc(100vh - 140px)',
       display: 'flex',
       flexDirection: 'column',
       gap: 2,
+      overflow: 'hidden',
     }}>
-      {/* Calendar Grid - Full width */}
-      <CalendarGrid
-        currentDate={currentDate}
-        events={events}
-        onDateClick={handleDateClick}
-        onEventClick={handleEditEvent}
-        onAddEvent={handleAddEvent}
-        onNavigate={handleNavigate}
-      />
+      {/* Calendar Grid - takes remaining space above the event list */}
+      <Box sx={{ 
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}>
+        <CalendarGrid
+          currentDate={currentDate}
+          events={events}
+          selectedDate={selectedDate}
+          onDateClick={handleDateClick}
+          onEventClick={handleEditEvent}
+          onAddEvent={handleAddEvent}
+          onNavigate={handleNavigate}
+        />
+      </Box>
 
-      {/* Selected Day Card - Full width at bottom */}
-      {selectedDate && (
+      {/* Selected Day Section - fixed height at bottom */}
+      <Box sx={{ 
+        flexShrink: 0,
+        maxHeight: '220px',
+      }}>
         <EventList
           events={selectedEvents}
           selectedDate={selectedDate}
           onEventClick={handleEditEvent}
           onEventDelete={handleDeleteEvent}
-          onClose={handleCloseEventList}
           onAddEvent={handleAddEvent}
         />
-      )}
+      </Box>
 
       {/* Event Form Dialog */}
       <EventForm

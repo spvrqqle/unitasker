@@ -17,6 +17,7 @@ import {
 const CalendarGrid = ({ 
   currentDate, 
   events, 
+  selectedDate,
   onDateClick, 
   onEventClick, 
   onAddEvent,
@@ -46,6 +47,13 @@ const CalendarGrid = ({
     return today.getFullYear() === year && 
            today.getMonth() === month && 
            today.getDate() === day;
+  };
+
+  const isSelected = (year, month, day) => {
+    if (!selectedDate) return false;
+    return selectedDate.getFullYear() === year &&
+           selectedDate.getMonth() === month &&
+           selectedDate.getDate() === day;
   };
 
   const getEventsForDay = (year, month, day) => {
@@ -94,18 +102,27 @@ const CalendarGrid = ({
     cells.push({ type: 'day', day, key: `day-${day}` });
   }
 
+  // Calculate number of weeks to display
+  const totalCells = cells.length;
+  const numWeeks = Math.ceil(totalCells / 7);
+
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ 
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
       {/* Navigation Header */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        mb: 2,
+        mb: 1.5,
         flexWrap: 'wrap',
         gap: 1,
+        flexShrink: 0,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <IconButton onClick={() => handleNavigate(-1)} size="small">
             <ChevronLeftIcon />
           </IconButton>
@@ -134,20 +151,24 @@ const CalendarGrid = ({
         </Button>
       </Box>
 
-      {/* Calendar Grid - stretches full width */}
+      {/* Calendar Grid - fills remaining height */}
       <Paper sx={{ 
-        p: 2, 
+        flex: 1,
+        p: 1.5, 
         bgcolor: 'background.paper', 
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
-        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
       }}>
         {/* Weekday Headers */}
         <Box sx={{ 
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
           gap: 0.5,
-          mb: 1,
+          mb: 0.5,
+          flexShrink: 0,
         }}>
           {weekDays.map((day) => (
             <Typography
@@ -157,8 +178,8 @@ const CalendarGrid = ({
                 fontWeight: 600,
                 textAlign: 'center',
                 color: 'text.secondary',
-                fontSize: isMobile ? '0.6rem' : '0.75rem',
-                py: 0.5,
+                fontSize: isMobile ? '0.6rem' : '0.7rem',
+                py: 0.25,
               }}
             >
               {isMobile ? day.slice(0, 1) : day}
@@ -166,11 +187,14 @@ const CalendarGrid = ({
           ))}
         </Box>
 
-        {/* Calendar Days Grid */}
+        {/* Calendar Days Grid - fills remaining space */}
         <Box sx={{ 
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
+          gridTemplateRows: `repeat(${numWeeks}, 1fr)`,
           gap: 0.5,
+          flex: 1,
+          minHeight: 0,
         }}>
           {cells.map((cell) => {
             if (cell.type === 'empty') {
@@ -178,7 +202,6 @@ const CalendarGrid = ({
                 <Box
                   key={cell.key}
                   sx={{
-                    aspectRatio: '1 / 1',
                     borderRadius: 1,
                   }}
                 />
@@ -188,13 +211,13 @@ const CalendarGrid = ({
             const day = cell.day;
             const dayEvents = getEventsForDay(year, month, day);
             const isTodayDate = isToday(year, month, day);
+            const isSelectedDate = isSelected(year, month, day);
 
             return (
               <Box
                 key={cell.key}
                 onClick={() => handleDateClick(day)}
                 sx={{
-                  aspectRatio: '1 / 1',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -202,20 +225,34 @@ const CalendarGrid = ({
                   p: 0.5,
                   cursor: 'pointer',
                   borderRadius: 1,
-                  bgcolor: isTodayDate ? 'primary.main' : 'transparent',
-                  color: isTodayDate ? 'white' : 'text.primary',
-                  border: `1px solid ${isTodayDate ? 'transparent' : theme.palette.divider}`,
+                  bgcolor: isSelectedDate 
+                    ? 'primary.main' 
+                    : isTodayDate 
+                      ? 'action.selected' 
+                      : 'transparent',
+                  color: isSelectedDate ? 'white' : 'text.primary',
+                  border: `1px solid ${
+                    isSelectedDate 
+                      ? 'transparent' 
+                      : isTodayDate 
+                        ? 'primary.main' 
+                        : theme.palette.divider
+                  }`,
                   transition: 'all 0.15s',
+                  overflow: 'hidden',
                   '&:hover': {
-                    bgcolor: isTodayDate ? 'primary.dark' : 'action.hover',
+                    bgcolor: isSelectedDate 
+                      ? 'primary.dark' 
+                      : 'action.hover',
                   },
                 }}
               >
                 <Typography
                   variant="body2"
                   sx={{
-                    fontWeight: isTodayDate ? 700 : 400,
-                    fontSize: isMobile ? '0.7rem' : '0.9rem',
+                    fontWeight: isSelectedDate || isTodayDate ? 700 : 400,
+                    fontSize: isMobile ? '0.7rem' : '0.8rem',
+                    lineHeight: 1.2,
                   }}
                 >
                   {day}
@@ -227,31 +264,32 @@ const CalendarGrid = ({
                     display: 'flex', 
                     flexWrap: 'wrap', 
                     gap: 0.3, 
-                    mt: 0.5, 
+                    mt: 0.3, 
                     justifyContent: 'center' 
                   }}>
-                    {dayEvents.slice(0, isMobile ? 2 : 4).map((event, idx) => (
+                    {dayEvents.slice(0, isMobile ? 2 : 3).map((event, idx) => (
                       <Box
                         key={idx}
                         sx={{
-                          width: isMobile ? 4 : 6,
-                          height: isMobile ? 4 : 6,
+                          width: isMobile ? 3 : 5,
+                          height: isMobile ? 3 : 5,
                           borderRadius: '50%',
-                          bgcolor: event.color || '#0d6efd',
-                          border: isTodayDate ? '1px solid white' : 'none',
+                          bgcolor: isSelectedDate 
+                            ? 'white' 
+                            : (event.color || '#0d6efd'),
                         }}
                       />
                     ))}
-                    {dayEvents.length > (isMobile ? 2 : 4) && (
+                    {dayEvents.length > (isMobile ? 2 : 3) && (
                       <Typography 
                         variant="caption" 
                         sx={{ 
-                          fontSize: isMobile ? '0.5rem' : '0.6rem',
-                          color: isTodayDate ? 'white' : 'text.secondary',
+                          fontSize: isMobile ? '0.45rem' : '0.55rem',
+                          color: isSelectedDate ? 'white' : 'text.secondary',
                           lineHeight: 1,
                         }}
                       >
-                        +{dayEvents.length - (isMobile ? 2 : 4)}
+                        +{dayEvents.length - (isMobile ? 2 : 3)}
                       </Typography>
                     )}
                   </Box>
