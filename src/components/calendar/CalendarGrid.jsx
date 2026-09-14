@@ -1,12 +1,10 @@
 import React from 'react';
 import {
   Box,
-  Grid,
   Typography,
   Paper,
   IconButton,
   Button,
-  Stack,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -36,7 +34,11 @@ const CalendarGrid = ({
   };
 
   const formatDate = (year, month, day) => {
-    return new Date(year, month, day).toISOString().split('T')[0];
+    const date = new Date(year, month, day);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   const isToday = (year, month, day) => {
@@ -50,7 +52,10 @@ const CalendarGrid = ({
     const dateStr = formatDate(year, month, day);
     return events.filter(event => {
       const eventDate = new Date(event.date);
-      const eventDateStr = eventDate.toISOString().split('T')[0];
+      const yyyy = eventDate.getFullYear();
+      const mm = String(eventDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(eventDate.getDate()).padStart(2, '0');
+      const eventDateStr = `${yyyy}-${mm}-${dd}`;
       return eventDateStr === dateStr;
     });
   };
@@ -78,8 +83,19 @@ const CalendarGrid = ({
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Build the array of cells (empty cells + days)
+  const cells = [];
+  
+  for (let i = 0; i < firstDay; i++) {
+    cells.push({ type: 'empty', key: `empty-${i}` });
+  }
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push({ type: 'day', day, key: `day-${day}` });
+  }
+
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       {/* Navigation Header */}
       <Box sx={{ 
         display: 'flex', 
@@ -93,7 +109,7 @@ const CalendarGrid = ({
           <IconButton onClick={() => handleNavigate(-1)} size="small">
             <ChevronLeftIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 600, minWidth: 150, textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, minWidth: 170, textAlign: 'center' }}>
             {monthNames[month]} {year}
           </Typography>
           <IconButton onClick={() => handleNavigate(1)} size="small">
@@ -118,106 +134,132 @@ const CalendarGrid = ({
         </Button>
       </Box>
 
-      {/* Calendar Grid */}
-      <Paper sx={{ p: 2, bgcolor: 'background.paper', border: `1px solid ${theme.palette.divider}` }}>
+      {/* Calendar Grid - stretches full width */}
+      <Paper sx={{ 
+        p: 2, 
+        bgcolor: 'background.paper', 
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 2,
+        width: '100%',
+      }}>
         {/* Weekday Headers */}
-        <Grid container spacing={0.5} sx={{ mb: 1 }}>
+        <Box sx={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: 0.5,
+          mb: 1,
+        }}>
           {weekDays.map((day) => (
-            <Grid item xs key={day}>
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  display: 'block',
-                  color: 'text.secondary',
-                  fontSize: isMobile ? '0.6rem' : '0.75rem',
-                }}
-              >
-                {isMobile ? day.slice(0, 1) : day}
-              </Typography>
-            </Grid>
+            <Typography
+              key={day}
+              variant="caption"
+              sx={{
+                fontWeight: 600,
+                textAlign: 'center',
+                color: 'text.secondary',
+                fontSize: isMobile ? '0.6rem' : '0.75rem',
+                py: 0.5,
+              }}
+            >
+              {isMobile ? day.slice(0, 1) : day}
+            </Typography>
           ))}
-        </Grid>
+        </Box>
 
-        {/* Calendar Days */}
-        <Grid container spacing={0.5}>
-          {/* Empty cells for days before the 1st */}
-          {Array.from({ length: firstDay }).map((_, index) => (
-            <Grid item xs key={`empty-${index}`} sx={{ aspectRatio: '1 / 1' }}>
-              <Box sx={{ 
-                height: '100%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                opacity: 0.3,
-              }} />
-            </Grid>
-          ))}
+        {/* Calendar Days Grid */}
+        <Box sx={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: 0.5,
+        }}>
+          {cells.map((cell) => {
+            if (cell.type === 'empty') {
+              return (
+                <Box
+                  key={cell.key}
+                  sx={{
+                    aspectRatio: '1 / 1',
+                    borderRadius: 1,
+                  }}
+                />
+              );
+            }
 
-          {/* Days of the month */}
-          {Array.from({ length: daysInMonth }).map((_, index) => {
-            const day = index + 1;
+            const day = cell.day;
             const dayEvents = getEventsForDay(year, month, day);
             const isTodayDate = isToday(year, month, day);
 
             return (
-              <Grid item xs key={day} sx={{ aspectRatio: '1 / 1' }}>
-                <Box
+              <Box
+                key={cell.key}
+                onClick={() => handleDateClick(day)}
+                sx={{
+                  aspectRatio: '1 / 1',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  p: 0.5,
+                  cursor: 'pointer',
+                  borderRadius: 1,
+                  bgcolor: isTodayDate ? 'primary.main' : 'transparent',
+                  color: isTodayDate ? 'white' : 'text.primary',
+                  border: `1px solid ${isTodayDate ? 'transparent' : theme.palette.divider}`,
+                  transition: 'all 0.15s',
+                  '&:hover': {
+                    bgcolor: isTodayDate ? 'primary.dark' : 'action.hover',
+                  },
+                }}
+              >
+                <Typography
+                  variant="body2"
                   sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    p: 0.5,
-                    cursor: 'pointer',
-                    borderRadius: 2,
-                    bgcolor: isTodayDate ? 'primary.main' : 'transparent',
-                    color: isTodayDate ? 'white' : 'text.primary',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      bgcolor: isTodayDate ? 'primary.dark' : 'action.hover',
-                    },
+                    fontWeight: isTodayDate ? 700 : 400,
+                    fontSize: isMobile ? '0.7rem' : '0.9rem',
                   }}
-                  onClick={() => handleDateClick(day)}
                 >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: isTodayDate ? 700 : 400,
-                      fontSize: isMobile ? '0.7rem' : '0.9rem',
-                    }}
-                  >
-                    {day}
-                  </Typography>
-                  
-                  {/* Event dots */}
-                  {dayEvents.length > 0 && (
-                    <Stack direction="row" spacing={0.3} sx={{ mt: 0.3, flexWrap: 'wrap', justifyContent: 'center' }}>
-                      {dayEvents.slice(0, isMobile ? 2 : 4).map((event, idx) => (
-                        <Box
-                          key={idx}
-                          sx={{
-                            width: isMobile ? 4 : 6,
-                            height: isMobile ? 4 : 6,
-                            borderRadius: '50%',
-                            bgcolor: event.color || '#0d6efd',
-                          }}
-                        />
-                      ))}
-                      {dayEvents.length > (isMobile ? 2 : 4) && (
-                        <Typography variant="caption" sx={{ fontSize: isMobile ? '0.4rem' : '0.5rem' }}>
-                          +{dayEvents.length - (isMobile ? 2 : 4)}
-                        </Typography>
-                      )}
-                    </Stack>
-                  )}
-                </Box>
-              </Grid>
+                  {day}
+                </Typography>
+                
+                {/* Event dots */}
+                {dayEvents.length > 0 && (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 0.3, 
+                    mt: 0.5, 
+                    justifyContent: 'center' 
+                  }}>
+                    {dayEvents.slice(0, isMobile ? 2 : 4).map((event, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          width: isMobile ? 4 : 6,
+                          height: isMobile ? 4 : 6,
+                          borderRadius: '50%',
+                          bgcolor: event.color || '#0d6efd',
+                          border: isTodayDate ? '1px solid white' : 'none',
+                        }}
+                      />
+                    ))}
+                    {dayEvents.length > (isMobile ? 2 : 4) && (
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          fontSize: isMobile ? '0.5rem' : '0.6rem',
+                          color: isTodayDate ? 'white' : 'text.secondary',
+                          lineHeight: 1,
+                        }}
+                      >
+                        +{dayEvents.length - (isMobile ? 2 : 4)}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Box>
             );
           })}
-        </Grid>
+        </Box>
       </Paper>
     </Box>
   );

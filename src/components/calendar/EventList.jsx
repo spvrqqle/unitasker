@@ -10,7 +10,6 @@ import {
   IconButton,
   Button,
   Divider,
-  Chip,
   useTheme,
 } from '@mui/material';
 import {
@@ -18,6 +17,7 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   Close as CloseIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 
 const EventList = ({ 
@@ -49,13 +49,7 @@ const EventList = ({
   };
 
   if (!selectedDate) {
-    return (
-      <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'background.paper', border: `1px solid ${theme.palette.divider}` }}>
-        <Typography color="text.secondary">
-          Select a date to view events
-        </Typography>
-      </Paper>
-    );
+    return null;
   }
 
   return (
@@ -63,9 +57,8 @@ const EventList = ({
       p: 2, 
       bgcolor: 'background.paper', 
       border: `1px solid ${theme.palette.divider}`,
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
+      borderRadius: 2,
+      width: '100%',
     }}>
       {/* Header */}
       <Box sx={{ 
@@ -79,17 +72,19 @@ const EventList = ({
             {formatDate(selectedDate)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {events.length} {events.length === 1 ? 'event' : 'events'}
+            {events.length === 0 
+              ? 'Nothing scheduled.' 
+              : `${events.length} ${events.length === 1 ? 'event' : 'events'}`}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             size="small"
             variant="contained"
-            startIcon={<EventIcon />}
+            startIcon={<AddIcon />}
             onClick={() => onAddEvent(selectedDate)}
           >
-            Add
+            Add Event
           </Button>
           <IconButton size="small" onClick={onClose}>
             <CloseIcon />
@@ -100,33 +95,27 @@ const EventList = ({
       {/* Event List */}
       {events.length === 0 ? (
         <Box sx={{ 
-          flex: 1, 
           display: 'flex', 
           flexDirection: 'column',
           alignItems: 'center', 
           justifyContent: 'center',
           py: 4,
         }}>
-          <EventIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-          <Typography color="text.secondary" gutterBottom>
-            No events for this day
+          <EventIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+          <Typography color="text.secondary" variant="body2">
+            Nothing scheduled for this day
           </Typography>
           <Button
             variant="outlined"
             size="small"
             onClick={() => onAddEvent(selectedDate)}
-            sx={{ mt: 1 }}
+            sx={{ mt: 2 }}
           >
             Add Event
           </Button>
         </Box>
       ) : (
-        <List dense sx={{ 
-          flex: 1, 
-          overflow: 'auto',
-          '&::-webkit-scrollbar': { width: '4px' },
-          '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
-        }}>
+        <List dense sx={{ py: 0 }}>
           {events.map((event, index) => (
             <React.Fragment key={event.id}>
               {index > 0 && <Divider />}

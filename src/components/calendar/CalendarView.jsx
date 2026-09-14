@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -101,49 +100,36 @@ const CalendarView = () => {
     setSelectedDate(null);
   };
 
-  const showEventListSide = !isMobile && selectedDate;
-
   return (
-    <Box>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={showEventListSide ? 8 : 12} lg={showEventListSide ? 8 : 12}>
-          <CalendarGrid
-            currentDate={currentDate}
-            events={events}
-            onDateClick={handleDateClick}
-            onEventClick={handleEditEvent}
-            onAddEvent={handleAddEvent}
-            onNavigate={handleNavigate}
-          />
-        </Grid>
+    <Box sx={{ 
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 2,
+    }}>
+      {/* Calendar Grid - Full width */}
+      <CalendarGrid
+        currentDate={currentDate}
+        events={events}
+        onDateClick={handleDateClick}
+        onEventClick={handleEditEvent}
+        onAddEvent={handleAddEvent}
+        onNavigate={handleNavigate}
+      />
 
-        {showEventListSide && (
-          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <EventList
-              events={selectedEvents}
-              selectedDate={selectedDate}
-              onEventClick={handleEditEvent}
-              onEventDelete={handleDeleteEvent}
-              onClose={handleCloseEventList}
-              onAddEvent={handleAddEvent}
-            />
-          </Grid>
-        )}
-      </Grid>
-
-      {isMobile && selectedDate && (
-        <Box sx={{ mt: 2 }}>
-          <EventList
-            events={selectedEvents}
-            selectedDate={selectedDate}
-            onEventClick={handleEditEvent}
-            onEventDelete={handleDeleteEvent}
-            onClose={handleCloseEventList}
-            onAddEvent={handleAddEvent}
-          />
-        </Box>
+      {/* Selected Day Card - Full width at bottom */}
+      {selectedDate && (
+        <EventList
+          events={selectedEvents}
+          selectedDate={selectedDate}
+          onEventClick={handleEditEvent}
+          onEventDelete={handleDeleteEvent}
+          onClose={handleCloseEventList}
+          onAddEvent={handleAddEvent}
+        />
       )}
 
+      {/* Event Form Dialog */}
       <EventForm
         open={formOpen}
         onClose={handleCloseForm}
