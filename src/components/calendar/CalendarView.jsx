@@ -40,7 +40,7 @@ const CalendarView = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState('month'); // 'day', 'week', 'month'
+  const [viewMode, setViewMode] = useState('month');
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [formDate, setFormDate] = useState(null);
@@ -66,7 +66,9 @@ const CalendarView = () => {
 
   const getEventsForDay = (date) => {
     const key = formatDateKey(date);
-    return events.filter(event => formatDateKey(new Date(event.date)) === key);
+    return events
+      .filter(event => formatDateKey(new Date(event.date)) === key)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
   const getStartOfWeek = (date) => {
@@ -197,6 +199,7 @@ const CalendarView = () => {
       <Box sx={{ 
         display: 'grid',
         gridTemplateColumns: 'repeat(7, 1fr)',
+        gridTemplateRows: 'auto 1fr',
         gap: 0.5,
         flex: 1,
         minHeight: 0,
@@ -218,102 +221,111 @@ const CalendarView = () => {
           </Typography>
         ))}
 
-        {/* Day cells */}
-        {cells.map((cell) => {
-          if (cell.type === 'empty') {
-            return <Box key={cell.key} />;
-          }
+        {/* Day cells container */}
+        <Box sx={{
+          gridColumn: '1 / -1',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gridTemplateRows: `repeat(${numWeeks}, 1fr)`,
+          gap: 0.5,
+          minHeight: 0,
+        }}>
+          {cells.map((cell) => {
+            if (cell.type === 'empty') {
+              return <Box key={cell.key} />;
+            }
 
-          const day = cell.day;
-          const cellDate = new Date(year, month, day);
-          const dayEvents = getEventsForDay(cellDate);
-          const cellIsToday = isToday(cellDate);
-          const cellIsSelected = isSameDay(cellDate, selectedDate);
+            const day = cell.day;
+            const cellDate = new Date(year, month, day);
+            const dayEvents = getEventsForDay(cellDate);
+            const cellIsToday = isToday(cellDate);
+            const cellIsSelected = isSameDay(cellDate, selectedDate);
 
-          return (
-            <Box
-              key={cell.key}
-              onClick={() => handleDateClick(cellDate)}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                p: 0.5,
-                cursor: 'pointer',
-                borderRadius: 1,
-                bgcolor: cellIsSelected 
-                  ? 'primary.main' 
-                  : cellIsToday 
-                    ? 'action.selected' 
-                    : 'transparent',
-                color: cellIsSelected ? 'white' : 'text.primary',
-                border: `1px solid ${
-                  cellIsSelected 
-                    ? 'transparent' 
-                    : cellIsToday 
-                      ? 'primary.main' 
-                      : theme.palette.divider
-                }`,
-                transition: 'all 0.15s',
-                overflow: 'hidden',
-                '&:hover': {
-                  bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
-                },
-              }}
-            >
-              <Typography
-                variant="body2"
+            return (
+              <Box
+                key={cell.key}
+                onClick={() => handleDateClick(cellDate)}
                 sx={{
-                  fontWeight: cellIsSelected || cellIsToday ? 700 : 400,
-                  fontSize: isMobile ? '0.7rem' : '0.8rem',
-                  lineHeight: 1.2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  p: 0.5,
+                  cursor: 'pointer',
+                  borderRadius: 1,
+                  bgcolor: cellIsSelected 
+                    ? 'primary.main' 
+                    : cellIsToday 
+                      ? 'action.selected' 
+                      : 'transparent',
+                  color: cellIsSelected ? 'white' : 'text.primary',
+                  border: `1px solid ${
+                    cellIsSelected 
+                      ? 'transparent' 
+                      : cellIsToday 
+                        ? 'primary.main' 
+                        : theme.palette.divider
+                  }`,
+                  transition: 'all 0.15s',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
+                  },
                 }}
               >
-                {day}
-              </Typography>
-              
-              {dayEvents.length > 0 && (
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: 0.3, 
-                  mt: 0.3, 
-                  justifyContent: 'center' 
-                }}>
-                  {dayEvents.slice(0, isMobile ? 2 : 3).map((event, idx) => (
-                    <Box
-                      key={idx}
-                      sx={{
-                        width: isMobile ? 3 : 5,
-                        height: isMobile ? 3 : 5,
-                        borderRadius: '50%',
-                        bgcolor: cellIsSelected ? 'white' : (event.color || '#0d6efd'),
-                      }}
-                    />
-                  ))}
-                  {dayEvents.length > (isMobile ? 2 : 3) && (
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        fontSize: isMobile ? '0.45rem' : '0.55rem',
-                        color: cellIsSelected ? 'white' : 'text.secondary',
-                        lineHeight: 1,
-                      }}
-                    >
-                      +{dayEvents.length - (isMobile ? 2 : 3)}
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            </Box>
-          );
-        })}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: cellIsSelected || cellIsToday ? 700 : 400,
+                    fontSize: isMobile ? '0.7rem' : '0.8rem',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {day}
+                </Typography>
+                
+                {dayEvents.length > 0 && (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 0.3, 
+                    mt: 0.3, 
+                    justifyContent: 'center' 
+                  }}>
+                    {dayEvents.slice(0, isMobile ? 2 : 3).map((event, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          width: isMobile ? 3 : 5,
+                          height: isMobile ? 3 : 5,
+                          borderRadius: '50%',
+                          bgcolor: cellIsSelected ? 'white' : (event.color || '#0d6efd'),
+                        }}
+                      />
+                    ))}
+                    {dayEvents.length > (isMobile ? 2 : 3) && (
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          fontSize: isMobile ? '0.45rem' : '0.55rem',
+                          color: cellIsSelected ? 'white' : 'text.secondary',
+                          lineHeight: 1,
+                        }}
+                      >
+                        +{dayEvents.length - (isMobile ? 2 : 3)}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
     );
   };
 
-  // ---------- Week View ----------
+  // ---------- Week View (polished) ----------
   const renderWeekView = () => {
     const startOfWeek = getStartOfWeek(currentDate);
     const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -324,106 +336,183 @@ const CalendarView = () => {
 
     return (
       <Box sx={{ 
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: 0.5,
+        display: 'flex',
+        flexDirection: 'column',
         flex: 1,
         minHeight: 0,
       }}>
-        {/* Weekday headers */}
-        {weekDates.map((date, index) => (
-          <Typography
-            key={index}
-            variant="caption"
-            sx={{
-              fontWeight: 600,
-              textAlign: 'center',
-              color: 'text.secondary',
-              fontSize: isMobile ? '0.6rem' : '0.7rem',
-              py: 0.5,
-            }}
-          >
-            {isMobile ? weekDaysShort[index].slice(0, 1) : weekDaysShort[index]}
-          </Typography>
-        ))}
+        {/* Weekday headers row */}
+        <Box sx={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: 0.5,
+          mb: 0.5,
+          flexShrink: 0,
+        }}>
+          {weekDates.map((date, index) => {
+            const cellIsToday = isToday(date);
+            const cellIsSelected = isSameDay(date, selectedDate);
 
-        {/* Day columns with events */}
-        {weekDates.map((date, index) => {
-          const dayEvents = getEventsForDay(date);
-          const cellIsToday = isToday(date);
-          const cellIsSelected = isSameDay(date, selectedDate);
-
-          return (
-            <Box
-              key={index}
-              onClick={() => handleDateClick(date)}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                p: 0.5,
-                cursor: 'pointer',
-                borderRadius: 1,
-                bgcolor: cellIsSelected 
-                  ? 'primary.main' 
-                  : cellIsToday 
-                    ? 'action.selected' 
-                    : 'transparent',
-                color: cellIsSelected ? 'white' : 'text.primary',
-                border: `1px solid ${
-                  cellIsSelected 
-                    ? 'transparent' 
-                    : cellIsToday 
-                      ? 'primary.main' 
-                      : theme.palette.divider
-                }`,
-                transition: 'all 0.15s',
-                overflow: 'auto',
-                '&:hover': {
-                  bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
-                },
-              }}
-            >
-              <Typography
-                variant="body2"
+            return (
+              <Box
+                key={index}
+                onClick={() => handleDateClick(date)}
                 sx={{
-                  fontWeight: cellIsSelected || cellIsToday ? 700 : 400,
-                  fontSize: isMobile ? '0.75rem' : '0.9rem',
-                  lineHeight: 1.2,
-                  mb: 0.5,
+                  textAlign: 'center',
+                  py: 0.75,
+                  px: 0.5,
+                  cursor: 'pointer',
+                  borderRadius: 1,
+                  bgcolor: cellIsSelected ? 'primary.main' : 'transparent',
+                  color: cellIsSelected ? 'white' : 'text.primary',
+                  transition: 'all 0.15s',
+                  '&:hover': {
+                    bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
+                  },
                 }}
               >
-                {date.getDate()}
-              </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    fontWeight: 600,
+                    color: cellIsSelected ? 'white' : 'text.secondary',
+                    fontSize: '0.7rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {isMobile ? weekDaysShort[index].slice(0, 1) : weekDaysShort[index]}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: cellIsSelected || cellIsToday ? 700 : 500,
+                    fontSize: '1rem',
+                    lineHeight: 1.2,
+                    mt: 0.25,
+                    color: cellIsSelected 
+                      ? 'white' 
+                      : cellIsToday 
+                        ? 'primary.main' 
+                        : 'text.primary',
+                  }}
+                >
+                  {date.getDate()}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
 
-              {/* Events in column */}
-              <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 0.3 }}>
-                {dayEvents.map((event) => (
-                  <Box
-                    key={event.id}
-                    onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}
-                    sx={{
-                      bgcolor: cellIsSelected 
-                        ? 'rgba(255,255,255,0.25)' 
-                        : (event.color || '#0d6efd'),
-                      color: 'white',
-                      fontSize: '0.6rem',
-                      p: 0.3,
-                      borderRadius: 0.5,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      cursor: 'pointer',
-                      '&:hover': { opacity: 0.85 },
+        {/* Events area */}
+        <Box sx={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: 0.5,
+          flex: 1,
+          minHeight: 0,
+        }}>
+          {weekDates.map((date, index) => {
+            const dayEvents = getEventsForDay(date);
+            const cellIsToday = isToday(date);
+            const cellIsSelected = isSameDay(date, selectedDate);
+
+            return (
+              <Box
+                key={index}
+                onClick={() => handleDateClick(date)}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.5,
+                  p: 0.5,
+                  cursor: 'pointer',
+                  borderRadius: 1,
+                  bgcolor: cellIsSelected 
+                    ? 'action.selected' 
+                    : cellIsToday 
+                      ? 'action.hover' 
+                      : 'transparent',
+                  border: `1px solid ${
+                    cellIsSelected 
+                      ? 'primary.main' 
+                      : theme.palette.divider
+                  }`,
+                  overflow: 'auto',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                  '&::-webkit-scrollbar': { width: '4px' },
+                  '&::-webkit-scrollbar-thumb': { 
+                    background: theme.palette.divider, 
+                    borderRadius: '2px' 
+                  },
+                }}
+              >
+                {dayEvents.length === 0 ? (
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: 'text.disabled', 
+                      fontSize: '0.65rem',
+                      textAlign: 'center',
+                      mt: 1,
                     }}
                   >
-                    {event.title}
-                  </Box>
-                ))}
+                    —
+                  </Typography>
+                ) : (
+                  dayEvents.map((event) => (
+                    <Box
+                      key={event.id}
+                      onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}
+                      sx={{
+                        bgcolor: event.color || '#0d6efd',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 500,
+                        px: 0.75,
+                        py: 0.5,
+                        borderRadius: 0.75,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        '&:hover': { opacity: 0.85 },
+                      }}
+                    >
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          display: 'block',
+                          fontSize: '0.6rem',
+                          opacity: 0.85,
+                          lineHeight: 1,
+                          mb: 0.2,
+                        }}
+                      >
+                        {event.time ? formatTime(event.date) : 'All day'}
+                      </Typography>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          display: 'block',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          lineHeight: 1.2,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {event.title}
+                      </Typography>
+                    </Box>
+                  ))
+                )}
               </Box>
-            </Box>
-          );
-        })}
+            );
+          })}
+        </Box>
       </Box>
     );
   };
