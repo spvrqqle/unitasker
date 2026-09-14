@@ -13,7 +13,6 @@ import { useEvents } from '../../hooks/useEvents';
 const CalendarView = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   
   const {
     events,
@@ -69,7 +68,6 @@ const CalendarView = () => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
         await removeEvent(id);
-        // Refresh the events list
         refreshEvents();
       } catch (err) {
         console.error('Failed to delete event:', err);
@@ -103,13 +101,11 @@ const CalendarView = () => {
     setSelectedDate(null);
   };
 
-  // Determine if we show the event list side by side or below
   const showEventListSide = !isMobile && selectedDate;
 
   return (
     <Box>
       <Grid container spacing={2}>
-        {/* Calendar Grid */}
         <Grid item xs={12} md={showEventListSide ? 8 : 12} lg={showEventListSide ? 8 : 12}>
           <CalendarGrid
             currentDate={currentDate}
@@ -121,7 +117,6 @@ const CalendarView = () => {
           />
         </Grid>
 
-        {/* Event List - side by side on desktop */}
         {showEventListSide && (
           <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
             <EventList
@@ -136,7 +131,6 @@ const CalendarView = () => {
         )}
       </Grid>
 
-      {/* Event List - full width on mobile (below calendar) */}
       {isMobile && selectedDate && (
         <Box sx={{ mt: 2 }}>
           <EventList
@@ -150,7 +144,6 @@ const CalendarView = () => {
         </Box>
       )}
 
-      {/* Event Form Dialog */}
       <EventForm
         open={formOpen}
         onClose={handleCloseForm}

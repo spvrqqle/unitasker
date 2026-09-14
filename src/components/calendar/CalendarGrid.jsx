@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Grid,
@@ -6,11 +6,9 @@ import {
   Paper,
   IconButton,
   Button,
-  Chip,
   Stack,
   useTheme,
   useMediaQuery,
-  Tooltip,
 } from '@mui/material';
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -28,9 +26,6 @@ const CalendarGrid = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
-
-  const [selectedDate, setSelectedDate] = useState(null);
 
   const getDaysInMonth = (year, month) => {
     return new Date(year, month + 1, 0).getDate();
@@ -72,7 +67,6 @@ const CalendarGrid = ({
 
   const handleDateClick = (day) => {
     const date = new Date(year, month, day);
-    setSelectedDate(date);
     onDateClick(date);
   };
 
@@ -86,12 +80,14 @@ const CalendarGrid = ({
 
   return (
     <Box>
-      {/* Header */}
+      {/* Navigation Header */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
         mb: 2,
+        flexWrap: 'wrap',
+        gap: 1,
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <IconButton onClick={() => handleNavigate(-1)} size="small">
@@ -118,7 +114,7 @@ const CalendarGrid = ({
           onClick={() => onAddEvent(null)}
           size="small"
         >
-          Add Event
+          New Event
         </Button>
       </Box>
 

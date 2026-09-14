@@ -14,8 +14,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Box
 } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons/material';
+import CloseIcon from "@mui/icons-material/Close";
 
 const COLORS = [
   { value: '#0d6efd', label: 'Blue' },

@@ -69,7 +69,6 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
 
   const handleNavigation = (event, newValue) => {
     setCurrentTab(newValue);
-    // Dispatch custom event for navigation change
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: newValue }));
     console.log('Navigating to:', navItems[newValue].label);
   };
@@ -208,11 +207,7 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
   }
 
   // Tablet & Desktop: Sidebar
-  // For tablet, we default to collapsed state
-  // For desktop, we use the user's toggle preference
   const isCollapsed = isTablet ? true : sidebarCollapsed;
-  
-  // Width based on collapsed state
   const sidebarWidth = isCollapsed ? 72 : (isDesktop ? 240 : 200);
 
   return (
