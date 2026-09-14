@@ -107,9 +107,7 @@ const CalendarView = () => {
     setViewMode(mode);
   };
 
-  // When a day cell is clicked:
-  // - Always set the selected date
-  // - Switch to Day view to show the events for that day
+  // When a day cell is clicked: set selected date and switch to day view
   const handleDateClick = (date) => {
     setSelectedDate(date);
     setCurrentDate(date);
@@ -136,9 +134,11 @@ const CalendarView = () => {
   };
 
   // ---------- Event CRUD ----------
+  // Opening the form always resets state so it doesn't retain previous values
   const handleAddEvent = (date) => {
-    setFormDate(date || selectedDate);
     setEditingEvent(null);
+    // Use the passed date, or the selected date, or today (in that order of preference)
+    setFormDate(date || selectedDate || new Date());
     setFormOpen(true);
   };
 
@@ -166,6 +166,7 @@ const CalendarView = () => {
       } else {
         await addEvent(eventData);
       }
+      // Fully reset form state after saving
       setFormOpen(false);
       setEditingEvent(null);
       setFormDate(null);
@@ -206,7 +207,6 @@ const CalendarView = () => {
         flex: 1,
         minHeight: 0,
       }}>
-        {/* Weekday headers */}
         {weekDaysShort.map((day) => (
           <Typography
             key={day}
@@ -223,7 +223,6 @@ const CalendarView = () => {
           </Typography>
         ))}
 
-        {/* Day cells container */}
         <Box sx={{
           gridColumn: '1 / -1',
           display: 'grid',
@@ -271,7 +270,6 @@ const CalendarView = () => {
                   }`,
                   transition: 'all 0.15s',
                   overflow: 'hidden',
-                  position: 'relative',
                   '&:hover': {
                     bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
                     transform: 'scale(1.02)',
@@ -472,7 +470,7 @@ const CalendarView = () => {
                   dayEvents.map((event) => (
                     <Box
                       key={event.id}
-                      onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}
+                      // No onClick on events in week view — clicking a day switches to day view
                       sx={{
                         bgcolor: event.color || '#0d6efd',
                         color: 'white',
@@ -481,9 +479,7 @@ const CalendarView = () => {
                         px: 0.75,
                         py: 0.5,
                         borderRadius: 0.75,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        '&:hover': { opacity: 0.85 },
+                        pointerEvents: 'none', // Let click bubble to the day cell
                       }}
                     >
                       <Typography 
