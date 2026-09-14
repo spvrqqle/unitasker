@@ -107,11 +107,13 @@ const CalendarView = () => {
     setViewMode(mode);
   };
 
+  // When a day cell is clicked:
+  // - Always set the selected date
+  // - Switch to Day view to show the events for that day
   const handleDateClick = (date) => {
     setSelectedDate(date);
-    if (viewMode === 'month') {
-      setCurrentDate(date);
-    }
+    setCurrentDate(date);
+    setViewMode('day');
   };
 
   // ---------- Header Title ----------
@@ -240,6 +242,7 @@ const CalendarView = () => {
             const dayEvents = getEventsForDay(cellDate);
             const cellIsToday = isToday(cellDate);
             const cellIsSelected = isSameDay(cellDate, selectedDate);
+            const hasEvents = dayEvents.length > 0;
 
             return (
               <Box
@@ -268,8 +271,10 @@ const CalendarView = () => {
                   }`,
                   transition: 'all 0.15s',
                   overflow: 'hidden',
+                  position: 'relative',
                   '&:hover': {
                     bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
+                    transform: 'scale(1.02)',
                   },
                 }}
               >
@@ -284,20 +289,21 @@ const CalendarView = () => {
                   {day}
                 </Typography>
                 
-                {dayEvents.length > 0 && (
+                {hasEvents && (
                   <Box sx={{ 
                     display: 'flex', 
                     flexWrap: 'wrap', 
                     gap: 0.3, 
                     mt: 0.3, 
-                    justifyContent: 'center' 
+                    justifyContent: 'center',
+                    width: '100%',
                   }}>
                     {dayEvents.slice(0, isMobile ? 2 : 3).map((event, idx) => (
                       <Box
                         key={idx}
                         sx={{
-                          width: isMobile ? 3 : 5,
-                          height: isMobile ? 3 : 5,
+                          width: isMobile ? 4 : 6,
+                          height: isMobile ? 4 : 6,
                           borderRadius: '50%',
                           bgcolor: cellIsSelected ? 'white' : (event.color || '#0d6efd'),
                         }}
@@ -325,7 +331,7 @@ const CalendarView = () => {
     );
   };
 
-  // ---------- Week View (polished) ----------
+  // ---------- Week View ----------
   const renderWeekView = () => {
     const startOfWeek = getStartOfWeek(currentDate);
     const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -530,15 +536,32 @@ const CalendarView = () => {
         overflow: 'hidden',
       }}>
         {/* Day summary */}
-        <Box sx={{ mb: 1.5, flexShrink: 0 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            {dayNames[selectedDate.getDay()]}, {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {dayEvents.length === 0 
-              ? 'Nothing scheduled.' 
-              : `${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'}`}
-          </Typography>
+        <Box sx={{ 
+          mb: 1.5, 
+          flexShrink: 0,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              {dayNames[selectedDate.getDay()]}, {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {dayEvents.length === 0 
+                ? 'Nothing scheduled.' 
+                : `${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'}`}
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            onClick={() => handleAddEvent(selectedDate)}
+            sx={{ fontSize: '0.7rem', py: 0.5 }}
+          >
+            Add Event
+          </Button>
         </Box>
 
         {/* Events list */}
