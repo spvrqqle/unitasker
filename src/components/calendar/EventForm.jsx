@@ -14,9 +14,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Box
+  Box,
 } from '@mui/material';
-import CloseIcon from "@mui/icons-material/Close";
+import { Close as CloseIcon } from '@mui/icons-material';
 
 const COLORS = [
   { value: '#0d6efd', label: 'Blue' },
@@ -55,7 +55,6 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
         color: event.color || '#0d6efd',
       });
     } else {
-      // Use selectedDate or today
       const today = selectedDate || new Date();
       const dateStr = today.toISOString().split('T')[0];
       setFormData({
@@ -92,7 +91,6 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
   const handleSubmit = () => {
     if (!validateForm()) return;
 
-    // Combine date and time
     let dateTime = formData.date;
     if (formData.time) {
       dateTime = `${formData.date}T${formData.time}`;
@@ -136,6 +134,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             fullWidth
             autoFocus
             placeholder="Enter event title..."
+            InputLabelProps={{ shrink: true }}
           />
 
           {/* Description */}
@@ -147,6 +146,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             rows={3}
             fullWidth
             placeholder="Add details about this event..."
+            InputLabelProps={{ shrink: true }}
           />
 
           {/* Date */}
@@ -173,11 +173,12 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
 
           {/* Color */}
           <FormControl fullWidth>
-            <InputLabel>Color</InputLabel>
+            <InputLabel shrink>Color</InputLabel>
             <Select
               value={formData.color}
               onChange={handleChange('color')}
               label="Color"
+              notched
               renderValue={(value) => (
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Box
