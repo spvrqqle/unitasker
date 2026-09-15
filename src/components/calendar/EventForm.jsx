@@ -114,6 +114,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
       fullScreen={fullScreen}
       fullWidth
       maxWidth="sm"
+      disableEnforceFocus
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>{isEditing ? 'Edit Event' : 'Create New Event'}</span>
@@ -179,6 +180,20 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
               onChange={handleChange('color')}
               label="Color"
               notched
+              MenuProps={{
+                disablePortal: false,
+                anchorOrigin: {
+                  vertical: 'bottom',
+                  horizontal: 'left',
+                },
+                transformOrigin: {
+                  vertical: 'top',
+                  horizontal: 'left',
+                },
+                PaperProps: {
+                  sx: { maxHeight: 300 },
+                },
+              }}
               renderValue={(value) => (
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Box
