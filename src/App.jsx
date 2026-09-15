@@ -12,6 +12,7 @@ import TaskList from './components/tasks/TaskList';
 import NoteList from './components/notes/NoteList';
 import CalendarView from './components/calendar/CalendarView';
 import ResourceManager from './components/resources/ResourceManager';
+import TimerView from './components/timer/TimerView';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
@@ -91,7 +92,7 @@ const AppContent = () => {
       case 4:
         return <ResourceManager />;
       case 5:
-        return <Box sx={{ p: 3 }}><Typography>Timer View (Coming Soon)</Typography></Box>;
+        return <TimerView />;
       case 6:
         return <Box sx={{ p: 3 }}><Typography>Settings View (Coming Soon)</Typography></Box>;
       default:

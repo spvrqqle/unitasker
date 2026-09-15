@@ -1,4 +1,10 @@
-import { addRecord, getAllRecords, updateRecord } from './database';
+import { 
+  addRecord, 
+  getAllRecords, 
+  updateRecord, 
+  deleteRecord,
+  getRecord,
+} from './database';
 
 const STORE_NAME = 'timerSessions';
 
@@ -9,42 +15,47 @@ function generateId() {
 }
 
 // Create a new timer session
-export async function createTimerSession(duration) {
+export async function createTimerSession({
+  mode = 'focus',           // 'focus' | 'shortBreak' | 'longBreak'
+  duration = 25 * 60,       // seconds
+}) {
   const session = {
     id: generateId(),
-    duration: duration, // in seconds
+    mode,
+    duration,
     startedAt: new Date().toISOString(),
     completedAt: null,
-    status: 'running', // 'running', 'completed', 'interrupted'
+    status: 'running',       // 'running' | 'completed' | 'interrupted'
   };
   
   await addRecord(STORE_NAME, session);
   return session;
 }
 
-// Complete a timer session
-export async function completeTimerSession(id) {
-  const sessions = await getAllRecords(STORE_NAME);
-  const session = sessions.find(s => s.id === id);
-  if (session) {
-    session.completedAt = new Date().toISOString();
-    session.status = 'completed';
-    await updateRecord(STORE_NAME, session);
-    return session;
-  }
-  return null;
+// Get a session by ID
+export async function getTimerSession(id) {
+  return getRecord(STORE_NAME, id);
 }
 
-// Interrupt a timer session
+// Complete a timer session
+export async function completeTimerSession(id) {
+  const session = await getTimerSession(id);
+  if (!session) return null;
+  
+  session.completedAt = new Date().toISOString();
+  session.status = 'completed';
+  await updateRecord(STORE_NAME, session);
+  return session;
+}
+
+// Interrupt (abandon) a timer session
 export async function interruptTimerSession(id) {
-  const sessions = await getAllRecords(STORE_NAME);
-  const session = sessions.find(s => s.id === id);
-  if (session) {
-    session.status = 'interrupted';
-    await updateRecord(STORE_NAME, session);
-    return session;
-  }
-  return null;
+  const session = await getTimerSession(id);
+  if (!session) return null;
+  
+  session.status = 'interrupted';
+  await updateRecord(STORE_NAME, session);
+  return session;
 }
 
 // Get all timer sessions
@@ -52,15 +63,43 @@ export async function getAllTimerSessions() {
   return getAllRecords(STORE_NAME);
 }
 
-// Get today's timer sessions
+// Delete a session
+export async function deleteTimerSession(id) {
+  await deleteRecord(STORE_NAME, id);
+}
+
+// Get sessions from today
 export async function getTodayTimerSessions() {
-  const allSessions = await getAllRecords(STORE_NAME);
+  const all = await getAllRecords(STORE_NAME);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  return allSessions.filter(session => {
+  return all.filter(session => {
     const sessionDate = new Date(session.startedAt);
     sessionDate.setHours(0, 0, 0, 0);
     return sessionDate.getTime() === today.getTime();
   });
+}
+
+// Get stats: completed focus sessions today, total focus seconds today
+export async function getTodayStats() {
+  const sessions = await getTodayTimerSessions();
+  const completedFocus = sessions.filter(
+    s => s.mode === 'focus' && s.status === 'completed'
+  );
+  
+  const totalFocusSeconds = completedFocus.reduce((sum, s) => sum + (s.duration || 0), 0);
+  
+  return {
+    completedSessions: completedFocus.length,
+    totalFocusSeconds,
+  };
+}
+
+// Clear all session history
+export async function clearAllTimerSessions() {
+  const all = await getAllRecords(STORE_NAME);
+  for (const session of all) {
+    await deleteRecord(STORE_NAME, session.id);
+  }
 }
