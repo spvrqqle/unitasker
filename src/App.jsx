@@ -11,6 +11,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import TaskList from './components/tasks/TaskList';
 import NoteList from './components/notes/NoteList';
 import CalendarView from './components/calendar/CalendarView';
+import ResourceManager from './components/resources/ResourceManager';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
@@ -20,7 +21,6 @@ const AppContent = () => {
   const isOnline = useOnlineStatus();
   const [currentTab, setCurrentTab] = useState(0);
 
-  // Listen for navigation changes
   useEffect(() => {
     const handleNavigationChange = (event) => {
       const newTab = event.detail;
@@ -34,7 +34,6 @@ const AppContent = () => {
     };
   }, []);
 
-  // Show loading state
   if (appLoading) {
     return (
       <ThemeProvider theme={theme}>
@@ -59,7 +58,6 @@ const AppContent = () => {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <ThemeProvider theme={theme}>
@@ -80,7 +78,6 @@ const AppContent = () => {
     );
   }
 
-  // Render the appropriate view based on current tab
   const renderView = () => {
     switch(currentTab) {
       case 0:
@@ -92,7 +89,7 @@ const AppContent = () => {
       case 3:
         return <CalendarView />;
       case 4:
-        return <Box sx={{ p: 3 }}><Typography>Resources View (Coming Soon)</Typography></Box>;
+        return <ResourceManager />;
       case 5:
         return <Box sx={{ p: 3 }}><Typography>Timer View (Coming Soon)</Typography></Box>;
       case 6:
@@ -102,7 +99,6 @@ const AppContent = () => {
     }
   };
 
-  // Get the current view name for the header
   const getViewName = () => {
     const names = ['Dashboard', 'Tasks', 'Notes', 'Calendar', 'Resources', 'Timer', 'Settings'];
     return names[currentTab] || 'Dashboard';
@@ -145,12 +141,8 @@ const AppContent = () => {
                     bgcolor: isOnline ? 'success.main' : 'error.main',
                     color: 'white',
                     fontWeight: 600,
-                    '& .MuiChip-label': {
-                      px: 1,
-                    },
-                    '& .MuiChip-icon': {
-                      color: 'white',
-                    },
+                    '& .MuiChip-label': { px: 1 },
+                    '& .MuiChip-icon': { color: 'white' },
                     transition: 'all 0.3s ease',
                   }}
                 />
@@ -160,12 +152,10 @@ const AppContent = () => {
             <ThemeToggle />
           </Box>
           
-          {/* Render the current view */}
           {renderView()}
         </Box>
       </Box>
       
-      {/* Offline Indicator */}
       <OfflineIndicator />
     </ThemeProvider>
   );
