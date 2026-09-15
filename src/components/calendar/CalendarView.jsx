@@ -107,11 +107,16 @@ const CalendarView = () => {
     setViewMode(mode);
   };
 
-  // When a day cell is clicked: set selected date and switch to day view
+  // When a day cell is clicked:
+  // - Empty day → just select it (highlight), stay on current view
+  // - Day with events → select it AND switch to Day view to show the events
   const handleDateClick = (date) => {
     setSelectedDate(date);
     setCurrentDate(date);
-    setViewMode('day');
+    const dayEvents = getEventsForDay(date);
+    if (dayEvents.length > 0) {
+      setViewMode('day');
+    }
   };
 
   // ---------- Header Title ----------
@@ -134,10 +139,8 @@ const CalendarView = () => {
   };
 
   // ---------- Event CRUD ----------
-  // Opening the form always resets state so it doesn't retain previous values
   const handleAddEvent = (date) => {
     setEditingEvent(null);
-    // Use the passed date, or the selected date, or today (in that order of preference)
     setFormDate(date || selectedDate || new Date());
     setFormOpen(true);
   };
@@ -166,7 +169,6 @@ const CalendarView = () => {
       } else {
         await addEvent(eventData);
       }
-      // Fully reset form state after saving
       setFormOpen(false);
       setEditingEvent(null);
       setFormDate(null);
@@ -470,7 +472,6 @@ const CalendarView = () => {
                   dayEvents.map((event) => (
                     <Box
                       key={event.id}
-                      // No onClick on events in week view — clicking a day switches to day view
                       sx={{
                         bgcolor: event.color || '#0d6efd',
                         color: 'white',
@@ -479,7 +480,7 @@ const CalendarView = () => {
                         px: 0.75,
                         py: 0.5,
                         borderRadius: 0.75,
-                        pointerEvents: 'none', // Let click bubble to the day cell
+                        pointerEvents: 'none',
                       }}
                     >
                       <Typography 
