@@ -16,7 +16,7 @@ export const MODES = {
 const STORAGE_KEY = 'unitaser_timer_state';
 
 export function usePomodoro() {
-  // Load saved state
+  // ---------- State ----------
   const [mode, setMode] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -53,24 +53,20 @@ export function usePomodoro() {
   const intervalRef = useRef(null);
   const completionHandledRef = useRef(false);
 
-  // Persist state to localStorage on change
+  // ---------- Persistence ----------
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        mode,
-        timeLeft,
-      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode, timeLeft }));
     } catch (e) {}
   }, [mode, timeLeft]);
 
-  // Persist auto-start setting
   useEffect(() => {
     try {
       localStorage.setItem('unitaser_auto_breaks', JSON.stringify(autoStartBreaks));
     } catch (e) {}
   }, [autoStartBreaks]);
 
-  // Load today's stats on mount
+  // ---------- Stats ----------
   const loadStats = useCallback(async () => {
     try {
       const todayStats = await getTodayStats();
@@ -84,7 +80,7 @@ export function usePomodoro() {
     loadStats();
   }, [loadStats]);
 
-  // Sound notification using Web Audio API
+  // ---------- Sound ----------
   const playSound = useCallback(() => {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -104,20 +100,35 @@ export function usePomodoro() {
         osc.stop(startTime + duration);
       };
 
-      // Three-tone chime
       const now = ctx.currentTime;
       playBeep(880, now, 0.2);
       playBeep(1100, now + 0.25, 0.2);
       playBeep(1320, now + 0.5, 0.4);
 
-      // Cleanup
       setTimeout(() => ctx.close(), 2000);
     } catch (e) {
       console.warn('Could not play sound:', e);
     }
   }, []);
 
-  // Handle session completion
+  // ---------- Start session (defined before handleComplete) ----------
+  const startSession = useCallback(async (sessionMode) => {
+    const activeMode = sessionMode || mode;
+    try {
+      const session = await createTimerSession({
+        mode: activeMode,
+        duration: MODES[activeMode].duration,
+      });
+      setSessionId(session.id);
+      completionHandledRef.current = false;
+      setIsRunning(true);
+    } catch (err) {
+      console.error('Failed to start timer session:', err);
+      setIsRunning(false);
+    }
+  }, [mode]);
+
+  // ---------- Handle session completion ----------
   const handleComplete = useCallback(async () => {
     if (completionHandledRef.current) return;
     completionHandledRef.current = true;
@@ -136,30 +147,24 @@ export function usePomodoro() {
       setSessionId(null);
     }
 
-    // Auto-switch to break (or back to focus)
+    // Auto-switch to next mode
     if (autoStartBreaks) {
+      let nextMode;
       if (mode === 'focus') {
-        const nextMode = 'shortBreak';
-        setMode(nextMode);
-        setTimeLeft(MODES[nextMode].duration);
-        // Auto-start the break
-        setTimeout(() => {
-          completionHandledRef.current = false;
-          startSession(nextMode);
-        }, 1500);
+        nextMode = 'shortBreak';
       } else {
-        const nextMode = 'focus';
-        setMode(nextMode);
-        setTimeLeft(MODES[nextMode].duration);
-        setTimeout(() => {
-          completionHandledRef.current = false;
-          startSession(nextMode);
-        }, 1500);
+        nextMode = 'focus';
       }
+      setMode(nextMode);
+      setTimeLeft(MODES[nextMode].duration);
+      setTimeout(() => {
+        completionHandledRef.current = false;
+        startSession(nextMode);
+      }, 1500);
     }
-  }, [sessionId, mode, autoStartBreaks, playSound, loadStats]);
+  }, [sessionId, mode, autoStartBreaks, playSound, loadStats, startSession]);
 
-  // Main timer tick
+  // ---------- Timer tick ----------
   useEffect(() => {
     if (!isRunning) {
       if (intervalRef.current) {
@@ -170,12 +175,7 @@ export function usePomodoro() {
     }
 
     intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
 
     return () => {
@@ -186,36 +186,16 @@ export function usePomodoro() {
     };
   }, [isRunning]);
 
-  // Trigger completion when timeLeft hits 0
+  // ---------- Trigger completion ----------
   useEffect(() => {
     if (timeLeft === 0 && isRunning) {
       handleComplete();
     }
   }, [timeLeft, isRunning, handleComplete]);
 
-  // Start a session (creates DB record)
-  const startSession = useCallback(async (sessionMode = null) => {
-    const activeMode = sessionMode || mode;
-    
-    try {
-      const session = await createTimerSession({
-        mode: activeMode,
-        duration: MODES[activeMode].duration,
-      });
-      setSessionId(session.id);
-      completionHandledRef.current = false;
-      setIsRunning(true);
-    } catch (err) {
-      console.error('Failed to start timer session:', err);
-      setIsRunning(false);
-    }
-  }, [mode]);
-
-  // Public API: Start / Pause / Reset / Switch mode
-
+  // ---------- Public API ----------
   const start = useCallback(() => {
     if (timeLeft <= 0) {
-      // Reset to current mode duration and start
       setTimeLeft(MODES[mode].duration);
     }
     startSession();
@@ -248,14 +228,11 @@ export function usePomodoro() {
   }, [sessionId, mode]);
 
   const switchMode = useCallback(async (newMode) => {
-    if (isRunning) {
-      // Interrupt current session when switching
-      if (sessionId) {
-        try {
-          await interruptTimerSession(sessionId);
-        } catch (err) {
-          console.error('Failed to interrupt session:', err);
-        }
+    if (isRunning && sessionId) {
+      try {
+        await interruptTimerSession(sessionId);
+      } catch (err) {
+        console.error('Failed to interrupt session:', err);
       }
     }
     setIsRunning(false);
@@ -265,7 +242,7 @@ export function usePomodoro() {
     setTimeLeft(MODES[newMode].duration);
   }, [isRunning, sessionId]);
 
-  // Cleanup on unmount — pause without interrupting the DB record
+  // ---------- Cleanup ----------
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
