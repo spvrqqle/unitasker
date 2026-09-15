@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'UniTaskerDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;   // ← bumped from 2 to 3
 
 let dbInstance = null;
 
@@ -27,32 +27,19 @@ export async function getDB() {
         noteStore.createIndex('by-tags', 'tags', { multiEntry: true });
       }
 
-      // Events store (for calendar)
+      // Events store
       if (!db.objectStoreNames.contains('events')) {
         const eventStore = db.createObjectStore('events', { keyPath: 'id' });
         eventStore.createIndex('by-date', 'date');
-        eventStore.createIndex('by-userId', 'userId');
       }
 
-      // Resources store - without 'data' field (file references only)
+      // Resources store
       if (!db.objectStoreNames.contains('resources')) {
         const resourceStore = db.createObjectStore('resources', { keyPath: 'id' });
         resourceStore.createIndex('by-type', 'type');
         resourceStore.createIndex('by-uploadedAt', 'uploadedAt');
         resourceStore.createIndex('by-name', 'name');
         resourceStore.createIndex('by-lastAccessed', 'lastAccessed');
-      } else if (oldVersion < 2) {
-        // Migration: Remove 'data' field from resources if it exists
-        const tx = db.transaction('resources', 'readwrite');
-        const store = tx.objectStore('resources');
-        
-        return store.getAll().then(resources => {
-          store.clear();
-          resources.forEach(resource => {
-            const { data, ...resourceWithoutData } = resource;
-            store.add(resourceWithoutData);
-          });
-        });
       }
 
       // Pomodoro timer state store
@@ -65,11 +52,12 @@ export async function getDB() {
         db.createObjectStore('settings', { keyPath: 'id' });
       }
 
-      // Timer sessions store (for tracking focus sessions)
+      // Timer sessions store — REQUIRED for the Timer module
       if (!db.objectStoreNames.contains('timerSessions')) {
-        const timerSessionStore = db.createObjectStore('timerSessions', { keyPath: 'id' });
-        timerSessionStore.createIndex('by-date', 'startedAt');
-        timerSessionStore.createIndex('by-status', 'status');
+        const timerStore = db.createObjectStore('timerSessions', { keyPath: 'id' });
+        timerStore.createIndex('by-date', 'startedAt');
+        timerStore.createIndex('by-status', 'status');
+        timerStore.createIndex('by-mode', 'mode');
       }
     },
   });
@@ -77,19 +65,8 @@ export async function getDB() {
   return dbInstance;
 }
 
-// Helper to serialize FileSystemFileHandle for storage
-export function serializeFileHandle(handle) {
-  if (!handle) return undefined;
-  return handle; // IndexedDB can store FileSystemFileHandle directly
-}
+// ---------- Generic CRUD ----------
 
-// Helper to deserialize FileSystemFileHandle
-export function deserializeFileHandle(serialized) {
-  if (!serialized) return undefined;
-  return serialized;
-}
-
-// Generic CRUD operations
 export async function addRecord(storeName, record) {
   const db = await getDB();
   return db.add(storeName, record);
@@ -118,4 +95,14 @@ export async function deleteRecord(storeName, id) {
 export async function clearStore(storeName) {
   const db = await getDB();
   return db.clear(storeName);
+}
+
+// ---------- File System handle helpers (kept for compatibility) ----------
+
+export function serializeFileHandle(handle) {
+  return handle || undefined;
+}
+
+export function deserializeFileHandle(serialized) {
+  return serialized || undefined;
 }

@@ -4,7 +4,6 @@ import {
   Typography,
   Button,
   Paper,
-  Stack,
   FormControlLabel,
   Switch,
   IconButton,
@@ -19,7 +18,8 @@ import {
   Refresh as ResetIcon,
 } from '@mui/icons-material';
 import CircularTimer from './CircularTimer';
-import { usePomodoro, MODES } from '../../hooks/usePomodoro';
+import { useTimer } from '../../context/TimerContext';
+import { MODES } from '../../hooks/usePomodoro';
 
 const TimerView = () => {
   const theme = useTheme();
@@ -36,7 +36,7 @@ const TimerView = () => {
     pause,
     reset,
     switchMode,
-  } = usePomodoro();
+  } = useTimer();
 
   const activeMode = MODES[mode];
   const progress = timeLeft / activeMode.duration;
@@ -90,15 +90,14 @@ const TimerView = () => {
         gap: 2,
         minHeight: 0,
       }}>
-        {/* Timer */}
+        {/* Timer card */}
         <Paper sx={{ 
           flex: isMobile ? 1 : 2,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          p: { xs: 3, sm: 4 },
-          gap: { xs: 4, sm: 5 },
+          p: 2,
           minHeight: 0,
           overflow: 'hidden',
         }}>
@@ -110,52 +109,50 @@ const TimerView = () => {
             isRunning={isRunning}
           />
 
-          {/* Controls */}
-          <Stack direction="row" spacing={3} alignItems="center">
-            <Tooltip title="Reset">
-              <IconButton
-                onClick={reset}
-                sx={{
-                  width: 48,
-                  height: 48,
-                  border: `1px solid ${theme.palette.divider}`,
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
-              >
-                <ResetIcon />
-              </IconButton>
-            </Tooltip>
+          <Button
+            variant="contained"
+            onClick={isRunning ? pause : start}
+            startIcon={isRunning ? <PauseIcon /> : <PlayArrowIcon />}
+            sx={{
+              mt: 5,
+              px: 5,
+              py: 1.25,
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              letterSpacing: 1,
+              bgcolor: activeMode.color,
+              '&:hover': { 
+                bgcolor: activeMode.color, 
+                filter: 'brightness(0.9)',
+              },
+            }}
+          >
+            {isRunning ? 'Pause' : 'Start'}
+          </Button>
 
-            <Button
-              variant="contained"
-              size="large"
-              onClick={isRunning ? pause : start}
-              startIcon={isRunning ? <PauseIcon /> : <PlayArrowIcon />}
+          <Tooltip title="Reset">
+            <IconButton
+              onClick={reset}
               sx={{
-                px: 6,
-                py: 1.75,
-                fontSize: '1.05rem',
-                fontWeight: 700,
-                letterSpacing: 1,
-                bgcolor: activeMode.color,
-                '&:hover': { 
-                  bgcolor: activeMode.color, 
-                  filter: 'brightness(0.9)',
-                },
+                mt: 2,
+                width: 40,
+                height: 40,
+                border: `1px solid ${theme.palette.divider}`,
+                '&:hover': { bgcolor: 'action.hover' },
               }}
             >
-              {isRunning ? 'Pause' : 'Start'}
-            </Button>
-          </Stack>
+              <ResetIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Paper>
 
         {/* Stats panel */}
         <Paper sx={{ 
           flex: 1,
-          p: { xs: 2.5, sm: 3 },
+          p: 2.5,
           display: 'flex',
           flexDirection: 'column',
-          gap: 2.5,
+          gap: 2,
           minHeight: 0,
           overflow: 'auto',
         }}>

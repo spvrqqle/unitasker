@@ -16,7 +16,6 @@ export const MODES = {
 const STORAGE_KEY = 'unitaser_timer_state';
 
 export function usePomodoro() {
-  // ---------- State ----------
   const [mode, setMode] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -111,7 +110,7 @@ export function usePomodoro() {
     }
   }, []);
 
-  // ---------- Start session (defined before handleComplete) ----------
+  // ---------- Start session ----------
   const startSession = useCallback(async (sessionMode) => {
     const activeMode = sessionMode || mode;
     try {
@@ -128,7 +127,7 @@ export function usePomodoro() {
     }
   }, [mode]);
 
-  // ---------- Handle session completion ----------
+  // ---------- Handle completion ----------
   const handleComplete = useCallback(async () => {
     if (completionHandledRef.current) return;
     completionHandledRef.current = true;
@@ -136,7 +135,6 @@ export function usePomodoro() {
     setIsRunning(false);
     playSound();
 
-    // Mark session completed in DB
     if (sessionId) {
       try {
         await completeTimerSession(sessionId);
@@ -147,7 +145,6 @@ export function usePomodoro() {
       setSessionId(null);
     }
 
-    // Auto-switch to next mode
     if (autoStartBreaks) {
       let nextMode;
       if (mode === 'focus') {
@@ -242,14 +239,10 @@ export function usePomodoro() {
     setTimeLeft(MODES[newMode].duration);
   }, [isRunning, sessionId]);
 
-  // ---------- Cleanup ----------
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
+  // NOTE: No unmount cleanup that pauses/interrupts the session.
+  // The intervalRef is cleaned up by the tick useEffect's return function
+  // when the component unmounts, but the timer STATE (isRunning, timeLeft)
+  // stays intact because usePomodoro now lives in TimerProvider at the App level.
 
   return {
     mode,

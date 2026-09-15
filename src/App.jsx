@@ -3,6 +3,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeContextProvider, useTheme } from './context/ThemeContext';
 import { AppContextProvider, useAppContext } from './context/AppContext';
+import { TimerProvider } from './context/TimerContext';
 import { Box, Typography, CircularProgress, Alert, Chip } from '@mui/material';
 import { WifiOff as WifiOffIcon, Wifi as WifiIcon } from '@mui/icons-material';
 import Navigation from './components/common/Navigation';
@@ -166,7 +167,9 @@ function App() {
   return (
     <ThemeContextProvider>
       <AppContextProvider>
-        <AppContent />
+        <TimerProvider>
+          <AppContent />
+        </TimerProvider>
       </AppContextProvider>
     </ThemeContextProvider>
   );

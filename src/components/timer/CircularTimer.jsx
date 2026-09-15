@@ -8,8 +8,8 @@ const CircularTimer = ({
   color,             // hex color
   isRunning,
 }) => {
-  const size = 320;
-  const strokeWidth = 12;
+  const size = 200;
+  const strokeWidth = 9;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress);
@@ -73,7 +73,7 @@ const CircularTimer = ({
           sx={{
             fontFamily: 'monospace',
             fontWeight: 700,
-            fontSize: '3.5rem',
+            fontSize: '2.25rem',
             lineHeight: 1,
             color: 'text.primary',
           }}
@@ -83,11 +83,11 @@ const CircularTimer = ({
         <Typography
           variant="body2"
           sx={{
-            mt: 1,
+            mt: 0.5,
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: 1.5,
-            fontSize: '0.75rem',
+            fontSize: '0.65rem',
             color: color,
           }}
         >
