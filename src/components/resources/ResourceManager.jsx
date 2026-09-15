@@ -26,6 +26,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,7 +36,7 @@ import {
   ViewList as ViewListIcon,
   Refresh as RefreshIcon,
   Link as LinkIcon,
-  AttachFile as AttachFileIcon,
+  FolderOpen as FolderOpenIcon,
 } from '@mui/icons-material';
 import ResourceCard from './ResourceCard';
 import ResourceTableRow from './ResourceTableRow';
@@ -113,12 +114,15 @@ const ResourceManager = () => {
 
   // ---------- Add handlers ----------
 
-  const handleAddFile = async () => {
+  // Opens the native OS file explorer
+  const handleBrowseFiles = async () => {
     if (fileSystemSupported) {
       try {
         setUploading(true);
         const result = await addFileWithPicker();
-        if (result) showSnackbar(`"${result.name}" added successfully`, 'success');
+        if (result) {
+          showSnackbar(`"${result.name}" added successfully`, 'success');
+        }
       } catch (err) {
         showSnackbar(err.message || 'Failed to add file', 'error');
       } finally {
@@ -236,24 +240,28 @@ const ResourceManager = () => {
             </ToggleButton>
           </ToggleButtonGroup>
 
-          <Button
-            variant="outlined"
-            startIcon={<LinkIcon />}
-            onClick={() => setLinkDialogOpen(true)}
-            size="small"
-          >
-            Add Link
-          </Button>
+          <Tooltip title="Paste a link to a Drive, GitHub, or web file" arrow>
+            <Button
+              variant="outlined"
+              startIcon={<LinkIcon />}
+              onClick={() => setLinkDialogOpen(true)}
+              size="small"
+            >
+              Add Link
+            </Button>
+          </Tooltip>
 
-          <Button
-            variant="contained"
-            startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <AttachFileIcon />}
-            onClick={handleAddFile}
-            disabled={uploading}
-            size="small"
-          >
-            Add File
-          </Button>
+          <Tooltip title="Open your computer's file explorer to select a file" arrow>
+            <Button
+              variant="contained"
+              startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <FolderOpenIcon />}
+              onClick={handleBrowseFiles}
+              disabled={uploading}
+              size="small"
+            >
+              Browse Files
+            </Button>
+          </Tooltip>
 
           <input
             ref={fileInputRef}
@@ -316,7 +324,7 @@ const ResourceManager = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {searchTerm 
                 ? 'Try a different search term.'
-                : 'Add links to your files, drives, or websites — or add files directly on Chrome/Edge.'}
+                : 'Add links to your files, drives, or websites — or browse your computer to reference local files.'}
             </Typography>
             {!searchTerm && (
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -325,15 +333,15 @@ const ResourceManager = () => {
                   startIcon={<LinkIcon />}
                   onClick={() => setLinkDialogOpen(true)}
                 >
-                  Add Your First Link
+                  Add a Link
                 </Button>
                 <Button
                   variant="contained"
-                  startIcon={<AttachFileIcon />}
-                  onClick={handleAddFile}
+                  startIcon={<FolderOpenIcon />}
+                  onClick={handleBrowseFiles}
                   disabled={uploading}
                 >
-                  Add a File
+                  Browse Files
                 </Button>
               </Box>
             )}
