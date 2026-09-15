@@ -15,12 +15,16 @@ function generateId() {
     Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
-// Check if File System Access API is supported
+// ---------- Capability detection ----------
+
 export function isFileSystemAccessSupported() {
-  return 'showOpenFilePicker' in window && 'FileSystemFileHandle' in window;
+  return typeof window !== 'undefined' &&
+    'showOpenFilePicker' in window && 
+    'FileSystemFileHandle' in window;
 }
 
-// Open file picker and return the file handle + metadata
+// ---------- File picker ----------
+
 export async function pickFile() {
   if (!isFileSystemAccessSupported()) {
     throw new Error('File System Access API not supported');
@@ -31,21 +35,23 @@ export async function pickFile() {
   });
 
   const file = await fileHandle.getFile();
-  return {
-    fileHandle,
-    file,
-  };
+  return { fileHandle, file };
 }
 
-// Create a new resource from a file handle
-export async function createResourceFromHandle(fileHandle, file) {
+// ---------- Create resources ----------
+
+// Create a file-type resource with a FileSystemFileHandle (Chrome/Edge)
+export async function createFileResource(fileHandle, file) {
   const resource = {
     id: generateId(),
+    kind: 'file',
     name: file.name,
     type: file.type || 'application/octet-stream',
     size: file.size,
     filePath: file.name,
-    fileHandle: fileHandle,  // IndexedDB can store FileSystemFileHandle directly
+    fileHandle: fileHandle,
+    url: null,
+    description: '',
     uploadedAt: new Date().toISOString(),
     lastAccessed: null,
     metadata: {
@@ -57,15 +63,18 @@ export async function createResourceFromHandle(fileHandle, file) {
   return resource;
 }
 
-// Create a resource from a regular file (fallback for unsupported browsers)
-export async function createResourceFromFile(file) {
+// Create a file-type resource without a handle (fallback browsers)
+export async function createFileResourceFallback(file) {
   const resource = {
     id: generateId(),
+    kind: 'file',
     name: file.name,
     type: file.type || 'application/octet-stream',
     size: file.size,
     filePath: file.name,
-    fileHandle: null,  // No handle in fallback mode
+    fileHandle: null,
+    url: null,
+    description: '',
     uploadedAt: new Date().toISOString(),
     lastAccessed: null,
     metadata: {
@@ -77,31 +86,46 @@ export async function createResourceFromFile(file) {
   return resource;
 }
 
-// Get all resources
+// Create a link-type resource (URL, drive link, local path, etc.)
+export async function createLinkResource({ name, url, description = '' }) {
+  const resource = {
+    id: generateId(),
+    kind: 'link',
+    name: name.trim(),
+    type: 'link',
+    size: 0,
+    filePath: '',
+    fileHandle: null,
+    url: url.trim(),
+    description: description.trim(),
+    uploadedAt: new Date().toISOString(),
+    lastAccessed: null,
+    metadata: {},
+  };
+  
+  await addRecord(STORE_NAME, resource);
+  return resource;
+}
+
+// ---------- Read / Update / Delete ----------
+
 export async function getAllResources() {
   return getAllRecords(STORE_NAME);
 }
 
-// Get a resource by ID
 export async function getResource(id) {
   return getRecord(STORE_NAME, id);
 }
 
-// Update a resource
 export async function updateResource(id, updates) {
   const resource = await getResource(id);
   if (!resource) throw new Error(`Resource with id ${id} not found`);
   
-  const updatedResource = {
-    ...resource,
-    ...updates,
-  };
-  
+  const updatedResource = { ...resource, ...updates };
   await updateRecord(STORE_NAME, updatedResource);
   return updatedResource;
 }
 
-// Update the lastAccessed timestamp
 export async function updateLastAccessed(id) {
   const resource = await getResource(id);
   if (resource) {
@@ -110,103 +134,97 @@ export async function updateLastAccessed(id) {
   }
 }
 
-// Delete a resource
 export async function deleteResource(id) {
   await deleteRecord(STORE_NAME, id);
 }
 
-// Open a file from its resource record
+// ---------- Open a resource ----------
+
 export async function openResource(resource) {
-  // Update last accessed time
   await updateLastAccessed(resource.id);
 
-  if (resource.fileHandle) {
-    // Use File System Access API
-    try {
-      // Check permission
-      const permission = await resource.fileHandle.queryPermission({ mode: 'read' });
-      
-      if (permission !== 'granted') {
-        const newPermission = await resource.fileHandle.requestPermission({ mode: 'read' });
-        if (newPermission !== 'granted') {
-          throw new Error('Permission denied to open file');
-        }
-      }
-
-      const file = await resource.fileHandle.getFile();
-      const url = URL.createObjectURL(file);
-      window.open(url, '_blank');
-      
-      // Clean up the URL after a delay
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-      
-      return { success: true };
-    } catch (err) {
-      if (err.name === 'NotFoundError') {
-        throw new Error('The file was moved or deleted from its original location.');
-      }
-      if (err.name === 'NotAllowedError') {
-        throw new Error('Permission to access the file was denied.');
-      }
-      throw err;
+  // Link type: just open the URL
+  if (resource.kind === 'link') {
+    if (!resource.url) {
+      throw new Error('This link is empty.');
     }
-  } else {
-    // Fallback: prompt user to re-select the file
-    throw new Error('This resource was added without a file handle. Please re-upload the file.');
+    // Prepend https:// if it looks like a bare domain
+    let url = resource.url;
+    if (!/^https?:\/\//i.test(url) && !/^[a-z]:\\/i.test(url) && !url.startsWith('/')) {
+      url = 'https://' + url;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return { success: true };
+  }
+
+  // File type: use the handle
+  if (!resource.fileHandle) {
+    throw new Error(
+      'This file was added without a handle. Please remove it and add it again using "Add File".'
+    );
+  }
+
+  try {
+    const permission = await resource.fileHandle.queryPermission({ mode: 'read' });
+    if (permission !== 'granted') {
+      const newPermission = await resource.fileHandle.requestPermission({ mode: 'read' });
+      if (newPermission !== 'granted') {
+        throw new Error('Permission denied to open file');
+      }
+    }
+
+    const file = await resource.fileHandle.getFile();
+    const url = URL.createObjectURL(file);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+    return { success: true };
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      throw new Error('The file was moved or deleted from its original location.');
+    }
+    if (err.name === 'NotAllowedError') {
+      throw new Error('Permission to access the file was denied.');
+    }
+    throw err;
   }
 }
 
-// Format file size for display
+// ---------- Helpers ----------
+
 export function formatFileSize(bytes) {
-  if (bytes === 0) return '0 B';
+  if (!bytes || bytes === 0) return '—';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Get an icon for a file type
-export function getFileIcon(type) {
-  if (!type) return '📎';
-  
-  const iconMap = {
-    'application/pdf': '📄',
-    'application/msword': '📝',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
-    'application/vnd.ms-excel': '📊',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📊',
-    'application/vnd.ms-powerpoint': '📽️',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📽️',
-    'application/zip': '🗜️',
-    'application/x-zip-compressed': '🗜️',
-    'application/json': '📋',
-    'text/plain': '📃',
-    'text/csv': '📊',
-    'text/html': '🌐',
-    'text/css': '🎨',
-    'text/javascript': '⚙️',
-  };
+// Get a short type label for a resource
+export function getTypeLabel(resource) {
+  if (resource.kind === 'link') {
+    if (!resource.url) return 'LINK';
+    if (/drive\.google/i.test(resource.url)) return 'DRIVE';
+    if (/onedrive|1drv\.ms/i.test(resource.url)) return '1DRIVE';
+    if (/dropbox/i.test(resource.url)) return 'DROPBOX';
+    if (/github/i.test(resource.url)) return 'GITHUB';
+    if (/youtube|youtu\.be/i.test(resource.url)) return 'YOUTUBE';
+    if (/^[a-z]:\\/i.test(resource.url)) return 'PATH';
+    return 'LINK';
+  }
 
-  if (iconMap[type]) return iconMap[type];
-
-  if (type.startsWith('image/')) return '🖼️';
-  if (type.startsWith('video/')) return '🎬';
-  if (type.startsWith('audio/')) return '🎵';
-  if (type.startsWith('text/')) return '📃';
-
-  return '📎';
-}
-
-// Group resources by category
-export function getFileCategory(type) {
-  if (!type) return 'other';
-  if (type.startsWith('image/')) return 'image';
-  if (type.startsWith('video/')) return 'video';
-  if (type.startsWith('audio/')) return 'audio';
-  if (type.includes('pdf')) return 'pdf';
-  if (type.includes('word') || type.includes('document')) return 'document';
-  if (type.includes('sheet') || type.includes('excel') || type.includes('csv')) return 'spreadsheet';
-  if (type.includes('presentation') || type.includes('powerpoint')) return 'presentation';
-  if (type.includes('zip') || type.includes('compressed')) return 'archive';
-  return 'other';
+  const name = (resource.name || '').toLowerCase();
+  const ext = name.split('.').pop();
+  if (ext && ext.length <= 5) return ext.toUpperCase();
+  if (!resource.type) return 'FILE';
+  if (resource.type === 'application/pdf') return 'PDF';
+  if (resource.type.includes('word')) return 'DOC';
+  if (resource.type.includes('excel')) return 'XLS';
+  if (resource.type.includes('powerpoint')) return 'PPT';
+  if (resource.type.startsWith('image/')) return 'IMG';
+  if (resource.type.startsWith('video/')) return 'VIDEO';
+  if (resource.type.startsWith('audio/')) return 'AUDIO';
+  if (resource.type.includes('zip')) return 'ZIP';
+  if (resource.type.startsWith('text/')) return 'TXT';
+  return 'FILE';
 }

@@ -34,10 +34,12 @@ import {
   GridView as GridViewIcon,
   ViewList as ViewListIcon,
   Refresh as RefreshIcon,
-  Info as InfoIcon,
+  Link as LinkIcon,
+  AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import ResourceCard from './ResourceCard';
 import ResourceTableRow from './ResourceTableRow';
+import LinkFormDialog from './LinkFormDialog';
 import { useResources } from '../../hooks/useResources';
 
 const ResourceManager = () => {
@@ -51,8 +53,9 @@ const ResourceManager = () => {
     error,
     openingId,
     fileSystemSupported,
-    addResourceWithPicker,
-    addResourceWithFile,
+    addFileWithPicker,
+    addFileFallback,
+    addLink,
     openResource,
     removeResource,
     refreshResources,
@@ -66,6 +69,7 @@ const ResourceManager = () => {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, resource: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [uploading, setUploading] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 
   const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity });
@@ -78,7 +82,9 @@ const ResourceManager = () => {
       const search = searchTerm.toLowerCase();
       result = result.filter(r =>
         r.name.toLowerCase().includes(search) ||
-        (r.type && r.type.toLowerCase().includes(search))
+        (r.type && r.type.toLowerCase().includes(search)) ||
+        (r.url && r.url.toLowerCase().includes(search)) ||
+        (r.description && r.description.toLowerCase().includes(search))
       );
     }
 
@@ -105,16 +111,16 @@ const ResourceManager = () => {
     return result;
   }, [resources, searchTerm, sortBy, sortDirection]);
 
-  const handleAddResource = async () => {
+  // ---------- Add handlers ----------
+
+  const handleAddFile = async () => {
     if (fileSystemSupported) {
       try {
         setUploading(true);
-        const result = await addResourceWithPicker();
-        if (result) {
-          showSnackbar(`"${result.name}" added successfully`, 'success');
-        }
+        const result = await addFileWithPicker();
+        if (result) showSnackbar(`"${result.name}" added successfully`, 'success');
       } catch (err) {
-        showSnackbar(err.message || 'Failed to add resource', 'error');
+        showSnackbar(err.message || 'Failed to add file', 'error');
       } finally {
         setUploading(false);
       }
@@ -126,25 +132,37 @@ const ResourceManager = () => {
   const handleFileInputChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       setUploading(true);
-      const result = await addResourceWithFile(file);
+      const result = await addFileFallback(file);
       showSnackbar(`"${result.name}" added successfully`, 'success');
     } catch (err) {
-      showSnackbar(err.message || 'Failed to add resource', 'error');
+      showSnackbar(err.message || 'Failed to add file', 'error');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  const handleAddLink = async (linkData) => {
+    try {
+      const result = await addLink(linkData);
+      showSnackbar(`"${result.name}" added successfully`, 'success');
+      setLinkDialogOpen(false);
+    } catch (err) {
+      showSnackbar(err.message || 'Failed to add link', 'error');
+    }
+  };
+
+  // ---------- Open / Delete ----------
+
   const handleOpen = async (resource) => {
     try {
       await openResource(resource);
-      showSnackbar(`Opening "${resource.name}"...`, 'info');
+      const label = resource.kind === 'link' ? 'Opening link...' : `Opening "${resource.name}"...`;
+      showSnackbar(label, 'info');
     } catch (err) {
-      showSnackbar(err.message || 'Failed to open file', 'error');
+      showSnackbar(err.message || 'Failed to open', 'error');
     }
   };
 
@@ -155,12 +173,11 @@ const ResourceManager = () => {
   const handleDeleteConfirm = async () => {
     const resource = deleteDialog.resource;
     if (!resource) return;
-
     try {
       await removeResource(resource.id);
       showSnackbar(`"${resource.name}" removed`, 'success');
     } catch (err) {
-      showSnackbar(err.message || 'Failed to remove resource', 'error');
+      showSnackbar(err.message || 'Failed to remove', 'error');
     } finally {
       setDeleteDialog({ open: false, resource: null });
     }
@@ -173,10 +190,6 @@ const ResourceManager = () => {
       setSortBy(column);
       setSortDirection('asc');
     }
-  };
-
-  const handleClearSearch = () => {
-    setSearchTerm('');
   };
 
   return (
@@ -208,7 +221,7 @@ const ResourceManager = () => {
           </IconButton>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -224,9 +237,18 @@ const ResourceManager = () => {
           </ToggleButtonGroup>
 
           <Button
+            variant="outlined"
+            startIcon={<LinkIcon />}
+            onClick={() => setLinkDialogOpen(true)}
+            size="small"
+          >
+            Add Link
+          </Button>
+
+          <Button
             variant="contained"
-            startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
-            onClick={handleAddResource}
+            startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <AttachFileIcon />}
+            onClick={handleAddFile}
             disabled={uploading}
             size="small"
           >
@@ -242,20 +264,16 @@ const ResourceManager = () => {
         </Box>
       </Box>
 
-      {/* Info banner */}
+      {/* Fallback browser info banner */}
       {!fileSystemSupported && (
-        <Alert 
-          severity="info" 
-          icon={<InfoIcon />}
-          sx={{ flexShrink: 0, py: 0.5 }}
-        >
-          Your browser doesn't support the File System Access API. Files added will only store metadata — you'll need to re-select the file to open it.
+        <Alert severity="info" sx={{ flexShrink: 0, py: 0.5 }}>
+          Your browser doesn't fully support the File System Access API. Files added here will only store metadata — you'll need to re-select the file each time. Links work everywhere.
         </Alert>
       )}
 
       {/* Search */}
       <TextField
-        placeholder="Search resources by name or type..."
+        placeholder="Search by name, type, or URL..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         size="small"
@@ -269,7 +287,7 @@ const ResourceManager = () => {
           ),
           endAdornment: searchTerm && (
             <InputAdornment position="end">
-              <IconButton size="small" onClick={handleClearSearch}>
+              <IconButton size="small" onClick={() => setSearchTerm('')}>
                 <ClearIcon fontSize="small" />
               </IconButton>
             </InputAdornment>
@@ -298,17 +316,26 @@ const ResourceManager = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {searchTerm 
                 ? 'Try a different search term.'
-                : 'Add file references to quickly access your files without uploading them.'}
+                : 'Add links to your files, drives, or websites — or add files directly on Chrome/Edge.'}
             </Typography>
             {!searchTerm && (
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={handleAddResource}
-                disabled={uploading}
-              >
-                Add Your First File
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<LinkIcon />}
+                  onClick={() => setLinkDialogOpen(true)}
+                >
+                  Add Your First Link
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<AttachFileIcon />}
+                  onClick={handleAddFile}
+                  disabled={uploading}
+                >
+                  Add a File
+                </Button>
+              </Box>
             )}
           </Paper>
         ) : viewMode === 'grid' ? (
@@ -403,6 +430,13 @@ const ResourceManager = () => {
         )}
       </Box>
 
+      {/* Link Dialog */}
+      <LinkFormDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        onSave={handleAddLink}
+      />
+
       {/* Delete Confirmation */}
       <Dialog
         open={deleteDialog.open}
@@ -413,8 +447,10 @@ const ResourceManager = () => {
         <DialogTitle>Remove Resource?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Remove the reference to <strong>{deleteDialog.resource?.name}</strong>? 
-            The actual file on your disk will not be deleted.
+            Remove <strong>{deleteDialog.resource?.name}</strong>? 
+            {deleteDialog.resource?.kind === 'file' 
+              ? ' The actual file on your disk will not be deleted.'
+              : ' No external data will be affected.'}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

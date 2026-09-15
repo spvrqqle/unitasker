@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   getAllResources, 
-  createResourceFromHandle,
-  createResourceFromFile,
+  createFileResource,
+  createFileResourceFallback,
+  createLinkResource,
   deleteResource,
   openResource as openResourceService,
   pickFile,
@@ -21,7 +22,6 @@ export function useResources() {
       setLoading(true);
       setError(null);
       const loaded = await getAllResources();
-      // Sort by uploadedAt (most recent first)
       const sorted = (loaded || []).sort(
         (a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)
       );
@@ -38,29 +38,39 @@ export function useResources() {
     loadResources();
   }, [loadResources]);
 
-  // Add resource using File System Access API
-  const addResourceWithPicker = useCallback(async () => {
+  // Add a file using File System Access API
+  const addFileWithPicker = useCallback(async () => {
     try {
       setError(null);
       const { fileHandle, file } = await pickFile();
-      const newResource = await createResourceFromHandle(fileHandle, file);
+      const newResource = await createFileResource(fileHandle, file);
       setResources(prev => [newResource, ...prev]);
       return newResource;
     } catch (err) {
-      // User cancelled the picker
-      if (err.name === 'AbortError') {
-        return null;
-      }
+      if (err.name === 'AbortError') return null;
       setError(err.message);
       throw err;
     }
   }, []);
 
-  // Add resource via standard file input (fallback)
-  const addResourceWithFile = useCallback(async (file) => {
+  // Add a file via standard file input (fallback)
+  const addFileFallback = useCallback(async (file) => {
     try {
       setError(null);
-      const newResource = await createResourceFromFile(file);
+      const newResource = await createFileResourceFallback(file);
+      setResources(prev => [newResource, ...prev]);
+      return newResource;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, []);
+
+  // Add a link
+  const addLink = useCallback(async (linkData) => {
+    try {
+      setError(null);
+      const newResource = await createLinkResource(linkData);
       setResources(prev => [newResource, ...prev]);
       return newResource;
     } catch (err) {
@@ -75,7 +85,6 @@ export function useResources() {
       setOpeningId(resource.id);
       setError(null);
       await openResourceService(resource);
-      // Update lastAccessed in the local state
       setResources(prev => prev.map(r => 
         r.id === resource.id 
           ? { ...r, lastAccessed: new Date().toISOString() }
@@ -89,7 +98,7 @@ export function useResources() {
     }
   }, []);
 
-  // Delete a resource
+  // Delete
   const removeResource = useCallback(async (id) => {
     try {
       setError(null);
@@ -101,7 +110,6 @@ export function useResources() {
     }
   }, []);
 
-  // Refresh
   const refreshResources = useCallback(() => {
     loadResources();
   }, [loadResources]);
@@ -112,8 +120,9 @@ export function useResources() {
     error,
     openingId,
     fileSystemSupported,
-    addResourceWithPicker,
-    addResourceWithFile,
+    addFileWithPicker,
+    addFileFallback,
+    addLink,
     openResource,
     removeResource,
     refreshResources,

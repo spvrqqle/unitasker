@@ -25,16 +25,18 @@ import {
   TextSnippet as TextIcon,
   Html as HtmlIcon,
   DataObject as JsonIcon,
-  Folder as FolderIcon,
+  Link as LinkIcon,
+  Cloud as CloudIcon,
+  GitHub as GitHubIcon,
+  PlayCircle as YouTubeIcon,
+  Folder as PathIcon,
 } from '@mui/icons-material';
-import { formatFileSize } from '../../services/resource.service';
+import { formatFileSize, getTypeLabel } from '../../services/resource.service';
 
-// Get icon + color for a file based on its MIME type and/or extension
 const getFileTypeInfo = (type, name) => {
   const fileName = (name || '').toLowerCase();
   const ext = fileName.split('.').pop();
 
-  // Check by MIME type first
   if (type) {
     if (type === 'application/pdf') return { Icon: PdfIcon, color: '#dc3545' };
     if (type.includes('word') || type.includes('document')) return { Icon: WordIcon, color: '#2b579a' };
@@ -49,7 +51,6 @@ const getFileTypeInfo = (type, name) => {
     if (type.startsWith('text/')) return { Icon: TextIcon, color: '#20c997' };
   }
 
-  // Fall back to extension
   const extMap = {
     pdf: { Icon: PdfIcon, color: '#dc3545' },
     doc: { Icon: WordIcon, color: '#2b579a' },
@@ -107,26 +108,18 @@ const getFileTypeInfo = (type, name) => {
   };
 
   if (extMap[ext]) return extMap[ext];
-
   return { Icon: FileIcon, color: '#6c757d' };
 };
 
-// Short label for the file type badge
-const getTypeLabel = (type, name) => {
-  const fileName = (name || '').toLowerCase();
-  const ext = fileName.split('.').pop();
-  if (ext && ext.length <= 5) return ext.toUpperCase();
-  if (!type) return 'FILE';
-  if (type === 'application/pdf') return 'PDF';
-  if (type.includes('word')) return 'DOC';
-  if (type.includes('excel')) return 'XLS';
-  if (type.includes('powerpoint')) return 'PPT';
-  if (type.startsWith('image/')) return 'IMG';
-  if (type.startsWith('video/')) return 'VIDEO';
-  if (type.startsWith('audio/')) return 'AUDIO';
-  if (type.includes('zip')) return 'ZIP';
-  if (type.startsWith('text/')) return 'TXT';
-  return 'FILE';
+const getLinkTypeInfo = (url) => {
+  if (!url) return { Icon: LinkIcon, color: '#6ea8fe' };
+  if (/drive\.google/i.test(url)) return { Icon: CloudIcon, color: '#1a73e8' };
+  if (/onedrive|1drv\.ms/i.test(url)) return { Icon: CloudIcon, color: '#0078d4' };
+  if (/dropbox/i.test(url)) return { Icon: CloudIcon, color: '#0061ff' };
+  if (/github/i.test(url)) return { Icon: GitHubIcon, color: '#e9ecef' };
+  if (/youtube|youtu\.be/i.test(url)) return { Icon: YouTubeIcon, color: '#ff0000' };
+  if (/^[a-z]:\\/i.test(url) || url.startsWith('/')) return { Icon: PathIcon, color: '#ffa726' };
+  return { Icon: LinkIcon, color: '#6ea8fe' };
 };
 
 const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
@@ -136,14 +129,20 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
     if (!dateString) return 'Never';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+      month: 'short', day: 'numeric', year: 'numeric',
     });
   };
 
-  const { Icon, color } = getFileTypeInfo(resource.type, resource.name);
-  const typeLabel = getTypeLabel(resource.type, resource.name);
+  const isLink = resource.kind === 'link';
+  const { Icon, color } = isLink
+    ? getLinkTypeInfo(resource.url)
+    : getFileTypeInfo(resource.type, resource.name);
+
+  const typeLabel = getTypeLabel(resource);
+
+  const subtitle = isLink
+    ? (resource.url.length > 42 ? resource.url.slice(0, 42) + '…' : resource.url)
+    : formatFileSize(resource.size);
 
   return (
     <Card
@@ -172,7 +171,6 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
         minHeight: 0,
         overflow: 'hidden',
       }}>
-        {/* Top row: Icon + Type badge */}
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
@@ -211,7 +209,6 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
           </Box>
         </Box>
 
-        {/* Title (truncated, 2 lines max) */}
         <Tooltip title={resource.name} arrow placement="top">
           <Typography
             variant="body2"
@@ -231,15 +228,23 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
           </Typography>
         </Tooltip>
 
-        {/* Meta */}
         <Box sx={{ mt: 1, flex: 1, minHeight: 0 }}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', fontSize: '0.68rem', lineHeight: 1.4 }}
-          >
-            {formatFileSize(resource.size)}
-          </Typography>
+          <Tooltip title={isLink ? resource.url : ''} arrow>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ 
+                display: 'block', 
+                fontSize: '0.68rem', 
+                lineHeight: 1.4,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {subtitle}
+            </Typography>
+          </Tooltip>
           <Typography
             variant="caption"
             color="text.secondary"
@@ -249,7 +254,6 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
           </Typography>
         </Box>
 
-        {/* Actions */}
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'flex-end', 
@@ -258,7 +262,7 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
           borderTop: `1px solid ${theme.palette.divider}`,
           flexShrink: 0,
         }}>
-          <Tooltip title="Open file" arrow>
+          <Tooltip title={isLink ? 'Open link' : 'Open file'} arrow>
             <span>
               <IconButton
                 size="small"
@@ -274,7 +278,7 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
               </IconButton>
             </span>
           </Tooltip>
-          <Tooltip title="Remove reference" arrow>
+          <Tooltip title="Remove" arrow>
             <IconButton
               size="small"
               onClick={() => onDelete(resource)}
