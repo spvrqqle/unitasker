@@ -10,6 +10,10 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -20,6 +24,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Event as EventIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import EventForm from './EventForm';
 import { useEvents } from '../../hooks/useEvents';
@@ -44,6 +49,11 @@ const CalendarView = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [formDate, setFormDate] = useState(null);
+
+  // Popup state
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupDate, setPopupDate] = useState(null);
+  const [popupEvents, setPopupEvents] = useState([]);
 
   // ---------- Helpers ----------
   const monthNames = [
@@ -83,6 +93,10 @@ const CalendarView = () => {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatPopupDate = (date) => {
+    return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  };
+
   // ---------- Navigation ----------
   const handleNavigate = (direction) => {
     const newDate = new Date(currentDate);
@@ -108,15 +122,32 @@ const CalendarView = () => {
   };
 
   // When a day cell is clicked:
-  // - Empty day → just select it (highlight), stay on current view
-  // - Day with events → select it AND switch to Day view to show the events
+  // - Always select it
+  // - If it has events → open popup showing those events
   const handleDateClick = (date) => {
     setSelectedDate(date);
     setCurrentDate(date);
     const dayEvents = getEventsForDay(date);
     if (dayEvents.length > 0) {
+      setPopupDate(date);
+      setPopupEvents(dayEvents);
+      setPopupOpen(true);
+    }
+  };
+
+  const handleClosePopup = () => {
+    setPopupOpen(false);
+    setPopupDate(null);
+    setPopupEvents([]);
+  };
+
+  const handleGoToDayView = () => {
+    if (popupDate) {
+      setSelectedDate(popupDate);
+      setCurrentDate(popupDate);
       setViewMode('day');
     }
+    handleClosePopup();
   };
 
   // ---------- Header Title ----------
@@ -143,19 +174,34 @@ const CalendarView = () => {
     setEditingEvent(null);
     setFormDate(date || selectedDate || new Date());
     setFormOpen(true);
+    // Close popup if it's open
+    if (popupOpen) handleClosePopup();
   };
 
   const handleEditEvent = (event) => {
     setEditingEvent(event);
     setFormDate(null);
     setFormOpen(true);
+    // Close popup if it's open
+    if (popupOpen) handleClosePopup();
   };
 
   const handleDeleteEvent = async (id) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
         await removeEvent(id);
-        refreshEvents();
+        await refreshEvents();
+        // If the popup is open, update its event list
+        if (popupDate) {
+          const updatedEvents = events.filter(
+            e => e.id !== id && formatDateKey(new Date(e.date)) === formatDateKey(popupDate)
+          );
+          setPopupEvents(updatedEvents);
+          // Close popup if no events left
+          if (updatedEvents.length === 0) {
+            handleClosePopup();
+          }
+        }
       } catch (err) {
         console.error('Failed to delete event:', err);
       }
@@ -532,7 +578,6 @@ const CalendarView = () => {
         minHeight: 0,
         overflow: 'hidden',
       }}>
-        {/* Day summary */}
         <Box sx={{ 
           mb: 1.5, 
           flexShrink: 0,
@@ -561,7 +606,6 @@ const CalendarView = () => {
           </Button>
         </Box>
 
-        {/* Events list */}
         {dayEvents.length === 0 ? (
           <Box sx={{ 
             flex: 1,
@@ -676,7 +720,6 @@ const CalendarView = () => {
     }}>
       {/* Navigation Header with Title and Tabs */}
       <Box sx={{ flexShrink: 0 }}>
-        {/* Top row: navigation + Add Event */}
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -714,7 +757,6 @@ const CalendarView = () => {
           </Button>
         </Box>
 
-        {/* View toggle tabs */}
         <Box sx={{ 
           display: 'flex', 
           gap: 0.5,
@@ -755,6 +797,123 @@ const CalendarView = () => {
         {viewMode === 'week' && renderWeekView()}
         {viewMode === 'day' && renderDayView()}
       </Paper>
+
+      {/* Day Events Popup */}
+      <Dialog
+        open={popupOpen}
+        onClose={handleClosePopup}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 1,
+        }}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              {popupDate ? formatPopupDate(popupDate) : ''}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {popupEvents.length} {popupEvents.length === 1 ? 'event' : 'events'}
+            </Typography>
+          </Box>
+          <IconButton onClick={handleClosePopup} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ p: 0 }}>
+          <List dense sx={{ py: 0 }}>
+            {popupEvents.map((event, index) => (
+              <React.Fragment key={event.id}>
+                {index > 0 && <Divider sx={{ opacity: 0.5 }} />}
+                <ListItem
+                  sx={{
+                    py: 1,
+                    px: 2,
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 24 }}>
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        bgcolor: event.color || '#0d6efd',
+                      }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                        {event.title}
+                      </Typography>
+                    }
+                    secondary={
+                      <Box>
+                        {event.description && (
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                            {event.description}
+                          </Typography>
+                        )}
+                        {event.time && (
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary" 
+                            sx={{ display: 'block', mt: 0.2, fontSize: '0.7rem' }}
+                          >
+                            🕐 {formatTime(event.date)}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                    secondaryTypographyProps={{ component: 'div' }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleEditEvent(event)}
+                      sx={{ color: 'text.secondary', p: 0.5 }}
+                    >
+                      <EditIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleDeleteEvent(event.id)}
+                      sx={{ color: 'text.secondary', p: 0.5 }}
+                    >
+                      <DeleteIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                </ListItem>
+              </React.Fragment>
+            ))}
+          </List>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 1.5, justifyContent: 'space-between' }}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => handleAddEvent(popupDate)}
+            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            sx={{ fontSize: '0.75rem' }}
+          >
+            Add Event
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={handleGoToDayView}
+            sx={{ fontSize: '0.75rem' }}
+          >
+            View Day →
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Event Form Dialog */}
       <EventForm
