@@ -25,15 +25,17 @@ import {
   Warning as WarningIcon,
   Schedule as ScheduleIcon,
   PlayArrow as PlayArrowIcon,
+  Pause as PauseIcon,
   Timer as TimerIcon,
 } from '@mui/icons-material';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import { createTimerSession, completeTimerSession, interruptTimerSession } from '../../services/timer.service';
+import { useTimer } from '../../context/TimerContext';
+import { MODES } from '../../hooks/usePomodoro';
 
 const Dashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+
   const {
     stats,
     todayTasks,
@@ -42,67 +44,23 @@ const Dashboard = () => {
     upcomingEvents,
     loading,
     error,
-    refetch,
   } = useDashboardData();
 
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [timerSessionId, setTimerSessionId] = useState(null);
+  // Live timer state from context
+  const {
+    mode,
+    timeLeft,
+    isRunning,
+    start,
+    pause,
+  } = useTimer();
 
-  // Timer logic
-  useEffect(() => {
-    let interval;
-    if (timerRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && timerRunning) {
-      logTimerSession();
-      setTimerRunning(false);
-    }
-    return () => clearInterval(interval);
-  }, [timerRunning, timeLeft]);
+  const activeMode = MODES[mode];
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const startTimer = async () => {
-    try {
-      const session = await createTimerSession(25 * 60);
-      setTimerSessionId(session.id);
-      setTimerRunning(true);
-    } catch (err) {
-      console.error('Failed to start timer session:', err);
-    }
-  };
-
-  const logTimerSession = async () => {
-    try {
-      if (!timerSessionId) return;
-      await completeTimerSession(timerSessionId);
-    } catch (err) {
-      console.error('Failed to complete timer session:', err);
-    }
-  };
-
-  const pauseTimer = async () => {
-    try {
-      if (timerSessionId) {
-        await interruptTimerSession(timerSessionId);
-      }
-      setTimerRunning(false);
-    } catch (err) {
-      console.error('Failed to pause timer:', err);
-    }
-  };
-
-  const resetTimer = () => {
-    setTimerRunning(false);
-    setTimeLeft(25 * 60);
-    setTimerSessionId(null);
   };
 
   const formatDate = (dateString) => {
@@ -154,7 +112,6 @@ const Dashboard = () => {
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: 3 }));
   };
 
-  // Stat Card Component
   const StatCard = ({ icon, title, value, onClick }) => (
     <Card
       sx={{
@@ -207,7 +164,6 @@ const Dashboard = () => {
     </Card>
   );
 
-  // Task List Renderer
   const renderTaskList = (tasks, emptyMessage, maxItems = 6) => {
     if (loading) {
       return (
@@ -284,7 +240,6 @@ const Dashboard = () => {
     );
   };
 
-  // Note List Renderer
   const renderNoteList = (notes, emptyMessage, maxItems = 4) => {
     if (loading) {
       return (
@@ -343,7 +298,6 @@ const Dashboard = () => {
     );
   };
 
-  // Event List Renderer
   const renderEventList = (events, emptyMessage, maxItems = 3) => {
     if (loading) {
       return (
@@ -401,8 +355,7 @@ const Dashboard = () => {
     );
   };
 
-  // Determine column layout based on screen size
-  const isTwoColumn = !isMobile && !isTablet;
+  const isTwoColumn = !isMobile;
 
   return (
     <Box sx={{ 
@@ -412,7 +365,7 @@ const Dashboard = () => {
       gap: 1.5,
       overflow: 'hidden',
     }}>
-      {/* Row 1: Stats Cards - 4 equal columns */}
+      {/* Row 1: Stats Cards */}
       <Box sx={{ 
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
@@ -506,21 +459,29 @@ const Dashboard = () => {
         </Button>
         <Button
           variant="outlined"
-          startIcon={<TimerIcon sx={{ fontSize: 18 }} />}
-          onClick={timerRunning ? pauseTimer : startTimer}
+          startIcon={isRunning ? <PauseIcon sx={{ fontSize: 18 }} /> : <TimerIcon sx={{ fontSize: 18 }} />}
+          onClick={isRunning ? pause : start}
           sx={{ 
             flex: 1, 
             py: 0.75, 
             fontSize: '0.75rem', 
-            fontWeight: timerRunning ? 600 : 400,
+            fontWeight: isRunning ? 600 : 400,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 0.5,
+            ...(isRunning && {
+              borderColor: activeMode.color,
+              color: activeMode.color,
+              '&:hover': {
+                borderColor: activeMode.color,
+                bgcolor: `${activeMode.color}10`,
+              },
+            }),
           }}
           size="small"
         >
-          {timerRunning ? formatTime(timeLeft) : 'Start 25:00'}
+          {isRunning ? formatTime(timeLeft) : 'Start 25:00'}
         </Button>
       </Box>
 
@@ -541,7 +502,7 @@ const Dashboard = () => {
           minHeight: 0,
           overflow: 'hidden',
         }}>
-          {/* Row: Today's Tasks + Upcoming Deadlines side by side */}
+          {/* Today's Tasks + Upcoming Deadlines */}
           <Box sx={{ 
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -608,7 +569,7 @@ const Dashboard = () => {
             </Paper>
           </Box>
 
-          {/* Row: Recent Notes + Next Events side by side */}
+          {/* Recent Notes + Next Events */}
           <Box sx={{ 
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -676,7 +637,7 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        {/* Right Column: Focus Timer (only on desktop/tablet) */}
+        {/* Right Column: Focus Timer Widget */}
         {isTwoColumn && (
           <Paper sx={{ 
             p: 2,
@@ -693,17 +654,49 @@ const Dashboard = () => {
             <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', alignSelf: 'flex-start' }}>
               Focus Timer
             </Typography>
-            <Typography variant="h2" sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '3.5rem', lineHeight: 1 }}>
+            <Typography 
+              variant="h2" 
+              sx={{ 
+                fontFamily: 'monospace', 
+                fontWeight: 700, 
+                fontSize: '3.5rem', 
+                lineHeight: 1,
+                color: isRunning ? activeMode.color : 'text.primary',
+                transition: 'color 0.3s ease',
+              }}
+            >
               {formatTime(timeLeft)}
+            </Typography>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                color: activeMode.color,
+                mt: -0.5,
+              }}
+            >
+              {activeMode.label}
             </Typography>
             <Button
               variant="contained"
               size="medium"
-              startIcon={timerRunning ? <ScheduleIcon /> : <PlayArrowIcon />}
-              onClick={timerRunning ? pauseTimer : startTimer}
-              sx={{ mt: 0.5, px: 3, fontSize: '0.8rem' }}
+              startIcon={isRunning ? <PauseIcon /> : <PlayArrowIcon />}
+              onClick={isRunning ? pause : start}
+              sx={{ 
+                mt: 1, 
+                px: 3, 
+                fontSize: '0.8rem',
+                bgcolor: activeMode.color,
+                '&:hover': {
+                  bgcolor: activeMode.color,
+                  filter: 'brightness(0.9)',
+                },
+              }}
             >
-              {timerRunning ? 'Pause' : 'Start focus'}
+              {isRunning ? 'Pause' : 'Start focus'}
             </Button>
             <Button
               variant="text"
