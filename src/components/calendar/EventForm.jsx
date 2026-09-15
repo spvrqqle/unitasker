@@ -10,13 +10,14 @@ import {
   IconButton,
   useTheme,
   useMediaQuery,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Box,
+  Typography,
+  Tooltip,
 } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import {
+  Close as CloseIcon,
+  Check as CheckIcon,
+} from '@mui/icons-material';
 
 const COLORS = [
   { value: '#0d6efd', label: 'Blue' },
@@ -76,6 +77,10 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
     }
   };
 
+  const handleColorSelect = (colorValue) => {
+    setFormData(prev => ({ ...prev, color: colorValue }));
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) {
@@ -107,6 +112,8 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
     onSave(dataToSave);
   };
 
+  const selectedColorLabel = COLORS.find(c => c.value === formData.color)?.label || 'Custom';
+
   return (
     <Dialog
       open={open}
@@ -114,7 +121,6 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
       fullScreen={fullScreen}
       fullWidth
       maxWidth="sm"
-      disableEnforceFocus
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>{isEditing ? 'Edit Event' : 'Create New Event'}</span>
@@ -172,61 +178,75 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          {/* Color */}
-          <FormControl fullWidth>
-            <InputLabel shrink>Color</InputLabel>
-            <Select
-              value={formData.color}
-              onChange={handleChange('color')}
-              label="Color"
-              notched
-              MenuProps={{
-                disablePortal: false,
-                anchorOrigin: {
-                  vertical: 'bottom',
-                  horizontal: 'left',
-                },
-                transformOrigin: {
-                  vertical: 'top',
-                  horizontal: 'left',
-                },
-                PaperProps: {
-                  sx: { maxHeight: 300 },
-                },
+          {/* Color picker */}
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                mb: 1,
+                color: 'text.secondary',
+                fontWeight: 500,
               }}
-              renderValue={(value) => (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Box
-                    sx={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: '50%',
-                      backgroundColor: value,
-                      border: '1px solid #ddd',
-                    }}
-                  />
-                  <span>{COLORS.find(c => c.value === value)?.label || value}</span>
-                </Stack>
-              )}
             >
-              {COLORS.map((color) => (
-                <MenuItem key={color.value} value={color.value}>
-                  <Stack direction="row" spacing={1} alignItems="center">
+              Color
+            </Typography>
+            <Stack direction="row" spacing={1.25} flexWrap="wrap" useFlexGap>
+              {COLORS.map((color) => {
+                const isSelected = formData.color === color.value;
+                return (
+                  <Tooltip key={color.value} title={color.label} arrow>
                     <Box
+                      onClick={() => handleColorSelect(color.value)}
                       sx={{
-                        width: 20,
-                        height: 20,
+                        width: 36,
+                        height: 36,
                         borderRadius: '50%',
                         backgroundColor: color.value,
-                        border: '1px solid #ddd',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: isSelected
+                          ? `3px solid ${theme.palette.text.primary}`
+                          : '2px solid transparent',
+                        outline: isSelected
+                          ? `2px solid ${theme.palette.background.paper}`
+                          : 'none',
+                        outlineOffset: '-4px',
+                        transition: 'all 0.15s',
+                        '&:hover': {
+                          transform: 'scale(1.1)',
+                          boxShadow: theme.shadows[3],
+                        },
                       }}
-                    />
-                    <span>{color.label}</span>
-                  </Stack>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                    >
+                      {isSelected && (
+                        <CheckIcon
+                          sx={{
+                            fontSize: 20,
+                            color: '#fff',
+                            filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))',
+                          }}
+                        />
+                      )}
+                    </Box>
+                  </Tooltip>
+                );
+              })}
+            </Stack>
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                mt: 1,
+                color: 'text.secondary',
+                fontSize: '0.7rem',
+              }}
+            >
+              Selected: <strong>{selectedColorLabel}</strong>
+            </Typography>
+          </Box>
         </Stack>
       </DialogContent>
 
