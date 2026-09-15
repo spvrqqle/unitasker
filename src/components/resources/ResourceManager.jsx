@@ -6,7 +6,6 @@ import {
   TextField,
   InputAdornment,
   Paper,
-  Grid,
   Table,
   TableBody,
   TableCell,
@@ -27,7 +26,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Chip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -62,23 +60,20 @@ const ResourceManager = () => {
   } = useResources();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState(isMobile ? 'grid' : 'grid');
+  const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('uploadedAt');
   const [sortDirection, setSortDirection] = useState('desc');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, resource: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [uploading, setUploading] = useState(false);
 
-  // Show a snackbar message
   const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity });
   };
 
-  // Filter and sort resources
   const filteredResources = useMemo(() => {
     let result = [...resources];
 
-    // Search filter
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       result = result.filter(r =>
@@ -87,7 +82,6 @@ const ResourceManager = () => {
       );
     }
 
-    // Sort
     result.sort((a, b) => {
       let cmpA = a[sortBy];
       let cmpB = b[sortBy];
@@ -111,7 +105,6 @@ const ResourceManager = () => {
     return result;
   }, [resources, searchTerm, sortBy, sortDirection]);
 
-  // Handle upload via File System Access API
   const handleAddResource = async () => {
     if (fileSystemSupported) {
       try {
@@ -126,12 +119,10 @@ const ResourceManager = () => {
         setUploading(false);
       }
     } else {
-      // Fallback: trigger hidden file input
       fileInputRef.current?.click();
     }
   };
 
-  // Fallback file input handler
   const handleFileInputChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -144,12 +135,10 @@ const ResourceManager = () => {
       showSnackbar(err.message || 'Failed to add resource', 'error');
     } finally {
       setUploading(false);
-      // Reset input
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // Handle open
   const handleOpen = async (resource) => {
     try {
       await openResource(resource);
@@ -159,7 +148,6 @@ const ResourceManager = () => {
     }
   };
 
-  // Handle delete confirm
   const handleDeleteClick = (resource) => {
     setDeleteDialog({ open: true, resource });
   };
@@ -178,7 +166,6 @@ const ResourceManager = () => {
     }
   };
 
-  // Sort handler
   const handleSort = (column) => {
     if (sortBy === column) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -188,7 +175,6 @@ const ResourceManager = () => {
     }
   };
 
-  // Clear search
   const handleClearSearch = () => {
     setSearchTerm('');
   };
@@ -247,7 +233,6 @@ const ResourceManager = () => {
             Add File
           </Button>
 
-          {/* Hidden file input for fallback */}
           <input
             ref={fileInputRef}
             type="file"
@@ -257,7 +242,7 @@ const ResourceManager = () => {
         </Box>
       </Box>
 
-      {/* Info banner for fallback browsers */}
+      {/* Info banner */}
       {!fileSystemSupported && (
         <Alert 
           severity="info" 
@@ -327,18 +312,28 @@ const ResourceManager = () => {
             )}
           </Paper>
         ) : viewMode === 'grid' ? (
-          <Grid container spacing={2}>
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(4, 1fr)',
+            },
+            gap: 2,
+            width: '100%',
+          }}>
             {filteredResources.map((resource) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={resource.id}>
+              <Box key={resource.id} sx={{ width: '100%', minWidth: 0 }}>
                 <ResourceCard
                   resource={resource}
                   onOpen={handleOpen}
                   onDelete={handleDeleteClick}
                   isOpening={openingId === resource.id}
                 />
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         ) : (
           <TableContainer component={Paper} sx={{ bgcolor: 'background.paper' }}>
             <Table size="small">
@@ -408,7 +403,7 @@ const ResourceManager = () => {
         )}
       </Box>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, resource: null })}
