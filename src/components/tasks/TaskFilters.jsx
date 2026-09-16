@@ -11,14 +11,12 @@ import {
   Stack,
   useTheme,
   useMediaQuery,
-  Grid,
 } from '@mui/material';
 import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 
 const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
   const handleChange = (field) => (event) => {
     onFilterChange({ ...filters, [field]: event.target.value });
@@ -32,109 +30,116 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
     onFilterChange({ ...filters, searchTerm: '' });
   };
 
-  const hasActiveFilters = filters.status !== 'All' || 
-                          filters.priority !== 'All' || 
-                          filters.sortBy !== 'dueDate' ||
-                          filters.searchTerm;
+  const hasActiveFilters =
+    filters.status !== 'All' ||
+    filters.priority !== 'All' ||
+    filters.sortBy !== 'dueDate' ||
+    filters.searchTerm;
 
   return (
     <Box sx={{ mb: 3 }}>
-      {/* Filters Grid */}
-      <Grid container spacing={2} alignItems="center">
-        {/* Search - takes full width on mobile, half on tablet, flex on desktop */}
-        <Grid item xs={12} sm={6} md={4} lg={3}>
+      {/* Filters row */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: '2fr 1fr 1fr 1.2fr 1fr',
+          },
+          gap: 2,
+          alignItems: 'center',
+        }}
+      >
+        {/* Search */}
+        <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2', md: 'span 1' } }}>
           <TextField
             placeholder="Search tasks..."
             value={filters.searchTerm || ''}
             onChange={handleSearchChange}
             size="small"
             fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: filters.searchTerm && (
-                <InputAdornment position="end">
-                  <ClearIcon 
-                    sx={{ cursor: 'pointer' }} 
-                    onClick={handleClearSearch}
-                  />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: filters.searchTerm ? (
+                  <InputAdornment position="end">
+                    <ClearIcon
+                      fontSize="small"
+                      sx={{ cursor: 'pointer' }}
+                      onClick={handleClearSearch}
+                    />
+                  </InputAdornment>
+                ) : null,
+              },
             }}
           />
-        </Grid>
+        </Box>
 
-        {/* Status Filter */}
-        <Grid item xs={6} sm={3} md={2} lg={2}>
-          <FormControl size="small" fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={filters.status || 'All'}
-              onChange={handleChange('status')}
-              label="Status"
-            >
-              <MenuItem value="All">All Status</MenuItem>
-              <MenuItem value="To Do">To Do</MenuItem>
-              <MenuItem value="In Progress">In Progress</MenuItem>
-              <MenuItem value="Completed">Completed</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
+        {/* Status */}
+        <FormControl size="small" fullWidth>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={filters.status || 'All'}
+            onChange={handleChange('status')}
+            label="Status"
+          >
+            <MenuItem value="All">All Status</MenuItem>
+            <MenuItem value="To Do">To Do</MenuItem>
+            <MenuItem value="In Progress">In Progress</MenuItem>
+            <MenuItem value="Completed">Completed</MenuItem>
+          </Select>
+        </FormControl>
 
-        {/* Priority Filter */}
-        <Grid item xs={6} sm={3} md={2} lg={2}>
-          <FormControl size="small" fullWidth>
-            <InputLabel>Priority</InputLabel>
-            <Select
-              value={filters.priority || 'All'}
-              onChange={handleChange('priority')}
-              label="Priority"
-            >
-              <MenuItem value="All">All Priority</MenuItem>
-              <MenuItem value="High">High</MenuItem>
-              <MenuItem value="Medium">Medium</MenuItem>
-              <MenuItem value="Low">Low</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
+        {/* Priority */}
+        <FormControl size="small" fullWidth>
+          <InputLabel>Priority</InputLabel>
+          <Select
+            value={filters.priority || 'All'}
+            onChange={handleChange('priority')}
+            label="Priority"
+          >
+            <MenuItem value="All">All Priority</MenuItem>
+            <MenuItem value="High">High</MenuItem>
+            <MenuItem value="Medium">Medium</MenuItem>
+            <MenuItem value="Low">Low</MenuItem>
+          </Select>
+        </FormControl>
 
         {/* Sort By */}
-        <Grid item xs={6} sm={3} md={2} lg={2.5}>
-          <FormControl size="small" fullWidth>
-            <InputLabel>Sort By</InputLabel>
-            <Select
-              value={filters.sortBy || 'dueDate'}
-              onChange={handleChange('sortBy')}
-              label="Sort By"
-            >
-              <MenuItem value="dueDate">Due Date</MenuItem>
-              <MenuItem value="priority">Priority</MenuItem>
-              <MenuItem value="title">Title</MenuItem>
-              <MenuItem value="createdAt">Created Date</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
+        <FormControl size="small" fullWidth>
+          <InputLabel>Sort By</InputLabel>
+          <Select
+            value={filters.sortBy || 'dueDate'}
+            onChange={handleChange('sortBy')}
+            label="Sort By"
+          >
+            <MenuItem value="dueDate">Due Date</MenuItem>
+            <MenuItem value="priority">Priority</MenuItem>
+            <MenuItem value="title">Title</MenuItem>
+            <MenuItem value="createdAt">Created Date</MenuItem>
+          </Select>
+        </FormControl>
 
         {/* Sort Direction */}
-        <Grid item xs={6} sm={3} md={2} lg={1.5}>
-          <FormControl size="small" fullWidth>
-            <InputLabel>Order</InputLabel>
-            <Select
-              value={filters.sortDirection || 'asc'}
-              onChange={handleChange('sortDirection')}
-              label="Order"
-            >
-              <MenuItem value="asc">↑ Asc</MenuItem>
-              <MenuItem value="desc">↓ Desc</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+        <FormControl size="small" fullWidth>
+          <InputLabel>Order</InputLabel>
+          <Select
+            value={filters.sortDirection || 'asc'}
+            onChange={handleChange('sortDirection')}
+            label="Order"
+          >
+            <MenuItem value="asc">↑ Asc</MenuItem>
+            <MenuItem value="desc">↓ Desc</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
-      {/* Active Filters Display */}
+      {/* Active filter chips */}
       {hasActiveFilters && (
         <Box sx={{ mt: 2 }}>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
