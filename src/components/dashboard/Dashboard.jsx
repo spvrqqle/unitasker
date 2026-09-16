@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Card,
@@ -30,7 +30,8 @@ import {
 } from '@mui/icons-material';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useTimer } from '../../context/TimerContext';
-import { MODES } from '../../hooks/usePomodoro';
+import { MODE_META } from '../../hooks/usePomodoro';
+import { usePomodoroSettings } from '../../hooks/usePomodoroSettings';
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -55,7 +56,9 @@ const Dashboard = () => {
     pause,
   } = useTimer();
 
-  const activeMode = MODES[mode];
+  const { settings } = usePomodoroSettings();
+
+  const activeMeta = MODE_META[mode];
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -471,17 +474,17 @@ const Dashboard = () => {
             justifyContent: 'center',
             gap: 0.5,
             ...(isRunning && {
-              borderColor: activeMode.color,
-              color: activeMode.color,
+              borderColor: activeMeta.color,
+              color: activeMeta.color,
               '&:hover': {
-                borderColor: activeMode.color,
-                bgcolor: `${activeMode.color}10`,
+                borderColor: activeMeta.color,
+                bgcolor: `${activeMeta.color}10`,
               },
             }),
           }}
           size="small"
         >
-          {isRunning ? formatTime(timeLeft) : 'Start 25:00'}
+          {isRunning ? formatTime(timeLeft) : `Start ${settings.focusMinutes}:00`}
         </Button>
       </Box>
 
@@ -661,7 +664,7 @@ const Dashboard = () => {
                 fontWeight: 700, 
                 fontSize: '3.5rem', 
                 lineHeight: 1,
-                color: isRunning ? activeMode.color : 'text.primary',
+                color: isRunning ? activeMeta.color : 'text.primary',
                 transition: 'color 0.3s ease',
               }}
             >
@@ -674,11 +677,11 @@ const Dashboard = () => {
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: 1,
-                color: activeMode.color,
+                color: activeMeta.color,
                 mt: -0.5,
               }}
             >
-              {activeMode.label}
+              {activeMeta.label}
             </Typography>
             <Button
               variant="contained"
@@ -689,9 +692,9 @@ const Dashboard = () => {
                 mt: 1, 
                 px: 3, 
                 fontSize: '0.8rem',
-                bgcolor: activeMode.color,
+                bgcolor: activeMeta.color,
                 '&:hover': {
-                  bgcolor: activeMode.color,
+                  bgcolor: activeMeta.color,
                   filter: 'brightness(0.9)',
                 },
               }}

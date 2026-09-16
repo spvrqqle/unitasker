@@ -1,11 +1,12 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import { MODE_META } from '../../hooks/usePomodoro';
 
 const CircularTimer = ({ 
-  progress,          // 0 to 1 (1 = full, 0 = done)
-  timeLeft,          // seconds
-  mode,              // 'focus' | 'shortBreak' | 'longBreak'
-  color,             // hex color
+  progress,
+  timeLeft,
+  mode,
+  color,
   isRunning,
 }) => {
   const size = 200;
@@ -20,16 +21,11 @@ const CircularTimer = ({
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const modeLabels = {
-    focus: 'Focus',
-    shortBreak: 'Short Break',
-    longBreak: 'Long Break',
-  };
+  const modeLabel = MODE_META[mode]?.label || 'Focus';
 
   return (
     <Box sx={{ position: 'relative', width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -39,7 +35,6 @@ const CircularTimer = ({
           strokeWidth={strokeWidth}
           style={{ color: 'rgba(128,128,128,0.15)' }}
         />
-        {/* Progress circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -57,7 +52,6 @@ const CircularTimer = ({
         />
       </svg>
 
-      {/* Center content */}
       <Box
         sx={{
           position: 'absolute',
@@ -91,7 +85,7 @@ const CircularTimer = ({
             color: color,
           }}
         >
-          {modeLabels[mode]}
+          {modeLabel}
         </Typography>
       </Box>
     </Box>

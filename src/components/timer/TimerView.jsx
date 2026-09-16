@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -16,37 +16,48 @@ import {
   PlayArrow as PlayArrowIcon,
   Pause as PauseIcon,
   Refresh as ResetIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import CircularTimer from './CircularTimer';
+import TimerSettingsDialog from './TimerSettingsDialog';
 import { useTimer } from '../../context/TimerContext';
-import { MODES } from '../../hooks/usePomodoro';
+import { MODE_META } from '../../hooks/usePomodoro';
+import { usePomodoroSettings } from '../../hooks/usePomodoroSettings';
 
 const TimerView = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const {
     mode,
     timeLeft,
     isRunning,
     stats,
-    autoStartBreaks,
-    setAutoStartBreaks,
+    sessionsUntilLongBreak,
     start,
     pause,
     reset,
     switchMode,
   } = useTimer();
 
-  const activeMode = MODES[mode];
-  const progress = timeLeft / activeMode.duration;
+  const { settings, updateSetting } = usePomodoroSettings();
+
+  const activeMeta = MODE_META[mode];
+
+  // Compute duration for the current mode
+  const modeDuration = {
+    focus: settings.focusMinutes * 60,
+    shortBreak: settings.shortBreakMinutes * 60,
+    longBreak: settings.longBreakMinutes * 60,
+  }[mode];
+
+  const progress = modeDuration > 0 ? timeLeft / modeDuration : 0;
 
   const formatDuration = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
+    if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
   };
 
@@ -58,9 +69,9 @@ const TimerView = () => {
       gap: 2,
       overflow: 'hidden',
     }}>
-      {/* Mode switcher */}
-      <Paper sx={{ p: 1, display: 'flex', gap: 1, flexShrink: 0 }}>
-        {Object.entries(MODES).map(([key, config]) => (
+      {/* Mode switcher + settings */}
+      <Paper sx={{ p: 1, display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
+        {Object.entries(MODE_META).map(([key, config]) => (
           <Button
             key={key}
             onClick={() => switchMode(key)}
@@ -80,6 +91,14 @@ const TimerView = () => {
             {config.label}
           </Button>
         ))}
+        <Tooltip title="Timer settings" arrow>
+          <IconButton
+            onClick={() => setSettingsOpen(true)}
+            sx={{ ml: 0.5, flexShrink: 0 }}
+          >
+            <SettingsIcon />
+          </IconButton>
+        </Tooltip>
       </Paper>
 
       {/* Main timer area */}
@@ -105,7 +124,7 @@ const TimerView = () => {
             progress={progress}
             timeLeft={timeLeft}
             mode={mode}
-            color={activeMode.color}
+            color={activeMeta.color}
             isRunning={isRunning}
           />
 
@@ -120,9 +139,9 @@ const TimerView = () => {
               fontSize: '0.95rem',
               fontWeight: 700,
               letterSpacing: 1,
-              bgcolor: activeMode.color,
+              bgcolor: activeMeta.color,
               '&:hover': { 
-                bgcolor: activeMode.color, 
+                bgcolor: activeMeta.color, 
                 filter: 'brightness(0.9)',
               },
             }}
@@ -180,34 +199,59 @@ const TimerView = () => {
             </Typography>
           </Box>
 
+          <Divider />
+
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+              Sessions until long break
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>
+              {sessionsUntilLongBreak}
+            </Typography>
+          </Box>
+
           <Divider sx={{ mt: 'auto' }} />
 
           <Box>
             <FormControlLabel
               control={
                 <Switch
-                  checked={autoStartBreaks}
-                  onChange={(e) => setAutoStartBreaks(e.target.checked)}
+                  checked={settings.autoStartBreaks}
+                  onChange={(e) => updateSetting('autoStartBreaks', e.target.checked)}
                   size="small"
                 />
               }
               label={
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                  Auto-start next session
+                  Auto-start breaks
                 </Typography>
               }
-              sx={{ m: 0 }}
+              sx={{ m: 0, display: 'flex' }}
             />
-            <Typography 
-              variant="caption" 
-              color="text.disabled" 
-              sx={{ display: 'block', mt: 1, fontSize: '0.65rem', lineHeight: 1.4 }}
-            >
-              When enabled, breaks and focus sessions will automatically begin after each one ends.
-            </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.autoStartFocus}
+                  onChange={(e) => updateSetting('autoStartFocus', e.target.checked)}
+                  size="small"
+                />
+              }
+              label={
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                  Auto-start next focus
+                </Typography>
+              }
+              sx={{ m: 0, display: 'flex' }}
+            />
           </Box>
         </Paper>
       </Box>
+
+      {/* Settings dialog */}
+      <TimerSettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </Box>
   );
 };
