@@ -73,10 +73,10 @@ const Dashboard = () => {
     today.setHours(0, 0, 0, 0);
     const dueDate = new Date(date);
     dueDate.setHours(0, 0, 0, 0);
-    
+
     if (dueDate.getTime() === today.getTime()) return 'Today';
     if (dueDate.getTime() < today.getTime()) return 'Overdue';
-    
+
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -131,7 +131,7 @@ const Dashboard = () => {
       }}
       onClick={onClick}
     >
-      <CardContent sx={{ 
+      <CardContent sx={{
         p: 2,
         '&:last-child': { pb: 2 },
         display: 'flex',
@@ -195,8 +195,8 @@ const Dashboard = () => {
     }
 
     return (
-      <List dense sx={{ 
-        py: 0, 
+      <List dense sx={{
+        py: 0,
         flex: 1,
         overflow: 'auto',
         '&::-webkit-scrollbar': { width: '3px' },
@@ -270,8 +270,8 @@ const Dashboard = () => {
     }
 
     return (
-      <List dense sx={{ 
-        py: 0, 
+      <List dense sx={{
+        py: 0,
         flex: 1,
         overflow: 'auto',
         '&::-webkit-scrollbar': { width: '3px' },
@@ -328,8 +328,8 @@ const Dashboard = () => {
     }
 
     return (
-      <List dense sx={{ 
-        py: 0, 
+      <List dense sx={{
+        py: 0,
         flex: 1,
         overflow: 'auto',
         '&::-webkit-scrollbar': { width: '3px' },
@@ -361,15 +361,15 @@ const Dashboard = () => {
   const isTwoColumn = !isMobile;
 
   return (
-    <Box sx={{ 
-      height: 'calc(100vh - 140px)', 
-      display: 'flex', 
+    <Box sx={{
+      height: 'calc(100vh - 140px)',
+      display: 'flex',
       flexDirection: 'column',
       gap: 1.5,
       overflow: 'hidden',
     }}>
       {/* Row 1: Stats Cards */}
-      <Box sx={{ 
+      <Box sx={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 1.5,
@@ -402,8 +402,8 @@ const Dashboard = () => {
       </Box>
 
       {/* Row 2: Quick Action Buttons */}
-      <Box sx={{ 
-        display: 'flex', 
+      <Box sx={{
+        display: 'flex',
         gap: 1.5,
         flexShrink: 0,
         alignItems: 'center',
@@ -412,10 +412,10 @@ const Dashboard = () => {
           variant="contained"
           startIcon={<AddIcon sx={{ fontSize: 20 }} />}
           onClick={handleNavigateToTasks}
-          sx={{ 
-            flex: 1.2, 
-            py: 0.75, 
-            fontSize: '0.8rem', 
+          sx={{
+            flex: 1.2,
+            py: 0.75,
+            fontSize: '0.8rem',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
@@ -430,9 +430,9 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={<NoteIcon sx={{ fontSize: 18 }} />}
           onClick={handleNavigateToNotes}
-          sx={{ 
-            flex: 1, 
-            py: 0.75, 
+          sx={{
+            flex: 1,
+            py: 0.75,
             fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
@@ -447,9 +447,9 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={<FolderIcon sx={{ fontSize: 18 }} />}
           onClick={handleNavigateToResources}
-          sx={{ 
-            flex: 1, 
-            py: 0.75, 
+          sx={{
+            flex: 1,
+            py: 0.75,
             fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
@@ -464,10 +464,10 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={isRunning ? <PauseIcon sx={{ fontSize: 18 }} /> : <TimerIcon sx={{ fontSize: 18 }} />}
           onClick={isRunning ? pause : start}
-          sx={{ 
-            flex: 1, 
-            py: 0.75, 
-            fontSize: '0.75rem', 
+          sx={{
+            flex: 1,
+            py: 0.75,
+            fontSize: '0.75rem',
             fontWeight: isRunning ? 600 : 400,
             display: 'flex',
             alignItems: 'center',
@@ -489,7 +489,7 @@ const Dashboard = () => {
       </Box>
 
       {/* Row 3: Main Content Grid */}
-      <Box sx={{ 
+      <Box sx={{
         display: 'grid',
         gridTemplateColumns: isTwoColumn ? '1fr 0.8fr' : '1fr',
         gap: 1.5,
@@ -498,7 +498,7 @@ const Dashboard = () => {
         overflow: 'hidden',
       }}>
         {/* Left/Main Column */}
-        <Box sx={{ 
+        <Box sx={{
           display: 'flex',
           flexDirection: 'column',
           gap: 1.5,
@@ -506,15 +506,14 @@ const Dashboard = () => {
           overflow: 'hidden',
         }}>
           {/* Today's Tasks + Upcoming Deadlines */}
-          <Box sx={{ 
+          <Box sx={{
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
             gap: 1.5,
             flex: 1,
             minHeight: 0,
           }}>
-            {/* Today's Tasks */}
-            <Paper sx={{ 
+            <Paper sx={{
               p: 1.5,
               display: 'flex',
               flexDirection: 'column',
@@ -527,7 +526,7 @@ const Dashboard = () => {
               <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
                 Today's Tasks
               </Typography>
-              <Box sx={{ 
+              <Box sx={{
                 flex: 1,
                 overflow: 'hidden',
                 display: 'flex',
@@ -542,8 +541,7 @@ const Dashboard = () => {
               )}
             </Paper>
 
-            {/* Upcoming Deadlines */}
-            <Paper sx={{ 
+            <Paper sx={{
               p: 1.5,
               display: 'flex',
               flexDirection: 'column',
@@ -556,7 +554,7 @@ const Dashboard = () => {
               <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
                 Upcoming Deadlines
               </Typography>
-              <Box sx={{ 
+              <Box sx={{
                 flex: 1,
                 overflow: 'hidden',
                 display: 'flex',
@@ -573,15 +571,14 @@ const Dashboard = () => {
           </Box>
 
           {/* Recent Notes + Next Events */}
-          <Box sx={{ 
+          <Box sx={{
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
             gap: 1.5,
             flex: 1,
             minHeight: 0,
           }}>
-            {/* Recent Notes */}
-            <Paper sx={{ 
+            <Paper sx={{
               p: 1.5,
               display: 'flex',
               flexDirection: 'column',
@@ -594,7 +591,7 @@ const Dashboard = () => {
               <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
                 Recent Notes
               </Typography>
-              <Box sx={{ 
+              <Box sx={{
                 flex: 1,
                 overflow: 'hidden',
                 display: 'flex',
@@ -609,8 +606,7 @@ const Dashboard = () => {
               )}
             </Paper>
 
-            {/* Next Events */}
-            <Paper sx={{ 
+            <Paper sx={{
               p: 1.5,
               display: 'flex',
               flexDirection: 'column',
@@ -623,7 +619,7 @@ const Dashboard = () => {
               <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
                 Next Events
               </Typography>
-              <Box sx={{ 
+              <Box sx={{
                 flex: 1,
                 overflow: 'hidden',
                 display: 'flex',
@@ -642,7 +638,7 @@ const Dashboard = () => {
 
         {/* Right Column: Focus Timer Widget */}
         {isTwoColumn && (
-          <Paper sx={{ 
+          <Paper sx={{
             p: 2,
             display: 'flex',
             flexDirection: 'column',
@@ -657,12 +653,12 @@ const Dashboard = () => {
             <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', alignSelf: 'flex-start' }}>
               Focus Timer
             </Typography>
-            <Typography 
-              variant="h2" 
-              sx={{ 
-                fontFamily: 'monospace', 
-                fontWeight: 700, 
-                fontSize: '3.5rem', 
+            <Typography
+              variant="h2"
+              sx={{
+                fontFamily: 'monospace',
+                fontWeight: 700,
+                fontSize: '3.5rem',
                 lineHeight: 1,
                 color: isRunning ? activeMeta.color : 'text.primary',
                 transition: 'color 0.3s ease',
@@ -670,9 +666,9 @@ const Dashboard = () => {
             >
               {formatTime(timeLeft)}
             </Typography>
-            <Typography 
-              variant="caption" 
-              sx={{ 
+            <Typography
+              variant="caption"
+              sx={{
                 fontSize: '0.7rem',
                 fontWeight: 600,
                 textTransform: 'uppercase',
@@ -688,9 +684,9 @@ const Dashboard = () => {
               size="medium"
               startIcon={isRunning ? <PauseIcon /> : <PlayArrowIcon />}
               onClick={isRunning ? pause : start}
-              sx={{ 
-                mt: 1, 
-                px: 3, 
+              sx={{
+                mt: 1,
+                px: 3,
                 fontSize: '0.8rem',
                 bgcolor: activeMeta.color,
                 '&:hover': {

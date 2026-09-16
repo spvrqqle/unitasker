@@ -63,7 +63,7 @@ const TimerView = () => {
   };
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       height: 'calc(100vh - 140px)',
       display: 'flex',
       flexDirection: 'column',
@@ -74,7 +74,7 @@ const TimerView = () => {
       <Paper sx={{ p: 1, display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
         {Object.entries(MODE_META).map(([key, config]) => {
           const isActive = mode === key;
-          const isDisabled = isRunning;  // ← disable while running
+          const isDisabled = isRunning;
           return (
             <Tooltip
               key={key}
@@ -119,7 +119,7 @@ const TimerView = () => {
       </Paper>
 
       {/* Main timer area */}
-      <Box sx={{ 
+      <Box sx={{
         flex: 1,
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
@@ -127,7 +127,7 @@ const TimerView = () => {
         minHeight: 0,
       }}>
         {/* Timer card */}
-        <Paper sx={{ 
+        <Paper sx={{
           flex: isMobile ? 1 : 2,
           display: 'flex',
           flexDirection: 'column',
@@ -157,8 +157,8 @@ const TimerView = () => {
               fontWeight: 700,
               letterSpacing: 1,
               bgcolor: activeMeta.color,
-              '&:hover': { 
-                bgcolor: activeMeta.color, 
+              '&:hover': {
+                bgcolor: activeMeta.color,
                 filter: 'brightness(0.9)',
               },
             }}
@@ -166,7 +166,6 @@ const TimerView = () => {
             {isRunning ? 'Pause' : 'Start'}
           </Button>
 
-          {/* Reset + Skip row */}
           <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
             <Tooltip title="Reset" arrow>
               <IconButton
@@ -201,7 +200,7 @@ const TimerView = () => {
         </Paper>
 
         {/* Stats panel */}
-        <Paper sx={{ 
+        <Paper sx={{
           flex: 1,
           p: 2.5,
           display: 'flex',

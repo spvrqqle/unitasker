@@ -40,11 +40,11 @@ const AppContent = () => {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Box sx={{ 
-          display: 'flex', 
+        <Box sx={{
+          display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center', 
-          justifyContent: 'center', 
+          alignItems: 'center',
+          justifyContent: 'center',
           minHeight: '100vh',
           gap: 3
         }}>
@@ -64,10 +64,10 @@ const AppContent = () => {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           minHeight: '100vh',
           p: 3
         }}>
@@ -111,10 +111,10 @@ const AppContent = () => {
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <Navigation currentTab={currentTab} />
-        <Box 
-          component="main" 
-          sx={{ 
-            flexGrow: 1, 
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
             p: { xs: 2, sm: 3 },
             width: { sm: `calc(100% - 240px)` },
             mt: { xs: 7, sm: 0 },
@@ -122,9 +122,9 @@ const AppContent = () => {
             overflow: 'auto',
           }}
         >
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
             mb: 3,
             flexWrap: 'wrap',
@@ -150,14 +150,14 @@ const AppContent = () => {
                 />
               )}
             </Box>
-            
+
             <ThemeToggle />
           </Box>
-          
+
           {renderView()}
         </Box>
       </Box>
-      
+
       <OfflineIndicator />
     </ThemeProvider>
   );

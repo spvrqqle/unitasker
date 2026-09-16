@@ -17,13 +17,18 @@ export const MODE_META = {
 const STATE_KEY = 'unitaser_timer_state';
 
 export function usePomodoro() {
+  // ---------- Settings ----------
   const { settings } = usePomodoroSettings();
 
-  // Duration in seconds for each mode (from settings)
+  // Compute durations on each render
+  const focusDuration = settings.focusMinutes * 60;
+  const shortBreakDuration = settings.shortBreakMinutes * 60;
+  const longBreakDuration = settings.longBreakMinutes * 60;
+
   const durations = {
-    focus: settings.focusMinutes * 60,
-    shortBreak: settings.shortBreakMinutes * 60,
-    longBreak: settings.longBreakMinutes * 60,
+    focus: focusDuration,
+    shortBreak: shortBreakDuration,
+    longBreak: longBreakDuration,
   };
 
   // ---------- State ----------
@@ -59,16 +64,14 @@ export function usePomodoro() {
   const intervalRef = useRef(null);
   const completionHandledRef = useRef(false);
 
-  // ---------- Persistence ----------
+  // ---------- Persist state ----------
   useEffect(() => {
     try {
       localStorage.setItem(STATE_KEY, JSON.stringify({ mode, timeLeft }));
     } catch (e) {}
   }, [mode, timeLeft]);
 
-  // ---------- React to duration setting changes ----------
-  // If the user changes a duration while the timer is NOT running,
-  // reset the current mode's time to the new value.
+  // ---------- Reset time when settings change and timer is idle ----------
   useEffect(() => {
     if (!isRunning && sessionId === null) {
       setTimeLeft(durations[mode]);
@@ -76,7 +79,7 @@ export function usePomodoro() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes, mode]);
 
-  // ---------- Stats ----------
+  // ---------- Stats loader ----------
   const loadStats = useCallback(async () => {
     try {
       const todayStats = await getTodayStats();
@@ -137,7 +140,7 @@ export function usePomodoro() {
       console.error('Failed to start timer session:', err);
       setIsRunning(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes]);
 
   // ---------- Handle session completion ----------
@@ -160,7 +163,6 @@ export function usePomodoro() {
       setSessionId(null);
     }
 
-    // Compute next mode
     let nextMode;
     let newFocusCount = completedFocusCount;
 
@@ -178,12 +180,10 @@ export function usePomodoro() {
       nextMode = 'focus';
     }
 
-    // Move to next mode
     setMode(nextMode);
     const nextDuration = durations[nextMode];
     setTimeLeft(nextDuration);
 
-    // Auto-start if enabled
     const shouldAutoStart =
       (nextMode === 'focus' && settings.autoStartFocus) ||
       (nextMode !== 'focus' && settings.autoStartBreaks);
@@ -196,7 +196,7 @@ export function usePomodoro() {
     } else {
       completionHandledRef.current = false;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, mode, completedFocusCount, settings, loadStats, playSound, startSession]);
 
   // ---------- Timer tick ----------
@@ -228,16 +228,17 @@ export function usePomodoro() {
     }
   }, [timeLeft, isRunning, handleComplete]);
 
-  // ---------- Public API ----------
+  // ---------- start ----------
   const start = useCallback(() => {
     const duration = durations[mode];
     if (timeLeft <= 0 || timeLeft > duration) {
       setTimeLeft(duration);
     }
     startSession();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, mode, startSession, settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes]);
 
+  // ---------- pause ----------
   const pause = useCallback(async () => {
     setIsRunning(false);
     if (sessionId) {
@@ -250,6 +251,7 @@ export function usePomodoro() {
     }
   }, [sessionId]);
 
+  // ---------- reset ----------
   const reset = useCallback(async () => {
     setIsRunning(false);
     if (sessionId) {
@@ -262,12 +264,11 @@ export function usePomodoro() {
     }
     completionHandledRef.current = false;
     setTimeLeft(durations[mode]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, mode, settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes]);
 
-  // ---------- Skip to next session ----------
+  // ---------- skip ----------
   const skip = useCallback(async () => {
-    // Interrupt current session (marked as 'interrupted', not 'completed')
     if (sessionId) {
       try {
         await interruptTimerSession(sessionId);
@@ -293,9 +294,10 @@ export function usePomodoro() {
     setIsRunning(false);
     setMode(nextMode);
     setTimeLeft(durations[nextMode]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, mode, completedFocusCount, settings.sessionsBeforeLongBreak, settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes]);
 
+  // ---------- switchMode ----------
   const switchMode = useCallback(async (newMode) => {
     if (isRunning && sessionId) {
       try {
@@ -309,10 +311,10 @@ export function usePomodoro() {
     completionHandledRef.current = false;
     setMode(newMode);
     setTimeLeft(durations[newMode]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, sessionId, settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes]);
 
-  // Compute how many focus sessions completed since the last long break
+  // ---------- Derived ----------
   const sessionsUntilLongBreak = (() => {
     const sessionsBefore = settings.sessionsBeforeLongBreak || 4;
     const remainder = completedFocusCount % sessionsBefore;
