@@ -17,6 +17,7 @@ import {
   Pause as PauseIcon,
   Refresh as ResetIcon,
   Settings as SettingsIcon,
+  SkipNext as SkipIcon,
 } from '@mui/icons-material';
 import CircularTimer from './CircularTimer';
 import TimerSettingsDialog from './TimerSettingsDialog';
@@ -39,13 +40,13 @@ const TimerView = () => {
     pause,
     reset,
     switchMode,
+    skip,
   } = useTimer();
 
   const { settings, updateSetting } = usePomodoroSettings();
 
   const activeMeta = MODE_META[mode];
 
-  // Compute duration for the current mode
   const modeDuration = {
     focus: settings.focusMinutes * 60,
     shortBreak: settings.shortBreakMinutes * 60,
@@ -71,26 +72,42 @@ const TimerView = () => {
     }}>
       {/* Mode switcher + settings */}
       <Paper sx={{ p: 1, display: 'flex', gap: 1, flexShrink: 0, alignItems: 'center' }}>
-        {Object.entries(MODE_META).map(([key, config]) => (
-          <Button
-            key={key}
-            onClick={() => switchMode(key)}
-            variant={mode === key ? 'contained' : 'text'}
-            sx={{
-              flex: 1,
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              py: 0.75,
-              ...(mode === key && {
-                bgcolor: config.color,
-                '&:hover': { bgcolor: config.color, filter: 'brightness(0.9)' },
-              }),
-            }}
-          >
-            {config.label}
-          </Button>
-        ))}
+        {Object.entries(MODE_META).map(([key, config]) => {
+          const isActive = mode === key;
+          const isDisabled = isRunning;  // ← disable while running
+          return (
+            <Tooltip
+              key={key}
+              title={isDisabled ? 'Pause the timer to switch modes' : ''}
+              arrow
+              disableHoverListener={!isDisabled}
+            >
+              <span style={{ flex: 1 }}>
+                <Button
+                  fullWidth
+                  disabled={isDisabled}
+                  onClick={() => switchMode(key)}
+                  variant={isActive ? 'contained' : 'text'}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    py: 0.75,
+                    ...(isActive && {
+                      bgcolor: config.color,
+                      '&:hover': {
+                        bgcolor: config.color,
+                        filter: 'brightness(0.9)',
+                      },
+                    }),
+                  }}
+                >
+                  {config.label}
+                </Button>
+              </span>
+            </Tooltip>
+          );
+        })}
         <Tooltip title="Timer settings" arrow>
           <IconButton
             onClick={() => setSettingsOpen(true)}
@@ -149,20 +166,38 @@ const TimerView = () => {
             {isRunning ? 'Pause' : 'Start'}
           </Button>
 
-          <Tooltip title="Reset">
-            <IconButton
-              onClick={reset}
-              sx={{
-                mt: 2,
-                width: 40,
-                height: 40,
-                border: `1px solid ${theme.palette.divider}`,
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            >
-              <ResetIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {/* Reset + Skip row */}
+          <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
+            <Tooltip title="Reset" arrow>
+              <IconButton
+                onClick={reset}
+                sx={{
+                  width: 40,
+                  height: 40,
+                  border: `1px solid ${theme.palette.divider}`,
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <ResetIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Skip to next session" arrow>
+              <span>
+                <IconButton
+                  onClick={skip}
+                  disabled={!isRunning}
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    border: `1px solid ${theme.palette.divider}`,
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <SkipIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
         </Paper>
 
         {/* Stats panel */}
@@ -247,7 +282,6 @@ const TimerView = () => {
         </Paper>
       </Box>
 
-      {/* Settings dialog */}
       <TimerSettingsDialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}

@@ -53,7 +53,7 @@ export function usePomodoro() {
 
   const [isRunning, setIsRunning] = useState(false);
   const [sessionId, setSessionId] = useState(null);
-  const [completedFocusCount, setCompletedFocusCount] = useState(0); // tracks session # for long break cycle
+  const [completedFocusCount, setCompletedFocusCount] = useState(0);
   const [stats, setStats] = useState({ completedSessions: 0, totalFocusSeconds: 0 });
 
   const intervalRef = useRef(null);
@@ -175,7 +175,6 @@ export function usePomodoro() {
         nextMode = 'shortBreak';
       }
     } else {
-      // After any break → back to focus
       nextMode = 'focus';
     }
 
@@ -195,7 +194,6 @@ export function usePomodoro() {
         startSession(nextMode, nextDuration);
       }, 1500);
     } else {
-      // Allow future completions
       completionHandledRef.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -267,6 +265,37 @@ export function usePomodoro() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, mode, settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes]);
 
+  // ---------- Skip to next session ----------
+  const skip = useCallback(async () => {
+    // Interrupt current session (marked as 'interrupted', not 'completed')
+    if (sessionId) {
+      try {
+        await interruptTimerSession(sessionId);
+      } catch (err) {
+        console.error('Failed to interrupt session:', err);
+      }
+      setSessionId(null);
+    }
+
+    const wasFocus = mode === 'focus';
+    let nextMode;
+
+    if (wasFocus) {
+      const sessionsBefore = settings.sessionsBeforeLongBreak || 4;
+      const newFocusCount = completedFocusCount + 1;
+      setCompletedFocusCount(newFocusCount);
+      nextMode = newFocusCount % sessionsBefore === 0 ? 'longBreak' : 'shortBreak';
+    } else {
+      nextMode = 'focus';
+    }
+
+    completionHandledRef.current = false;
+    setIsRunning(false);
+    setMode(nextMode);
+    setTimeLeft(durations[nextMode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, mode, completedFocusCount, settings.sessionsBeforeLongBreak, settings.focusMinutes, settings.shortBreakMinutes, settings.longBreakMinutes]);
+
   const switchMode = useCallback(async (newMode) => {
     if (isRunning && sessionId) {
       try {
@@ -302,6 +331,7 @@ export function usePomodoro() {
     start,
     pause,
     reset,
+    skip,
     switchMode,
     refreshStats: loadStats,
   };
