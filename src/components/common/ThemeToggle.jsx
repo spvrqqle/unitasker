@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { IconButton, Tooltip, Switch, FormControlLabel, Box, Badge } from '@mui/material';
-import { WbSunny, DarkMode, NotificationsOutlined } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { IconButton, Tooltip, Box, Badge } from '@mui/material';
+import {
+  LightMode as SunIcon,
+  DarkMode as MoonIcon,
+  NotificationsOutlined,
+} from '@mui/icons-material';
 import { useTheme as useThemeContext } from '../../context/ThemeContext';
 import NotificationDrawer from './NotificationDrawer';
 
@@ -10,8 +14,7 @@ const ThemeToggle = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load unread count from localStorage on mount
-  useEffect(() => {
+  React.useEffect(() => {
     const savedNotifications = localStorage.getItem('unitaser_notifications');
     if (savedNotifications) {
       try {
@@ -39,75 +42,80 @@ const ThemeToggle = () => {
     setUnreadCount(count);
   };
 
-  // Don't show badge until initialized to prevent flash
   const showBadge = isInitialized && unreadCount > 0;
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {/* Notification Icon */}
-        <Tooltip title="Notifications">
-          <IconButton 
-            color="inherit" 
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        {/* Notification bell */}
+        <Tooltip title="Notifications" arrow>
+          <IconButton
             size="small"
             onClick={handleNotificationClick}
-            sx={{ 
+            aria-label="Open notifications"
+            sx={{
               p: 1,
               '&:hover': {
-                backgroundColor: 'rgba(13, 110, 253, 0.08)',
-              }
+                backgroundColor: 'action.hover',
+              },
+              '&:focus-visible': {
+                outline: `2px solid currentColor`,
+                outlineOffset: 2,
+              },
             }}
           >
             {showBadge ? (
               <Badge badgeContent={unreadCount} color="error">
-                <NotificationsOutlined />
+                <NotificationsOutlined fontSize="small" />
               </Badge>
             ) : (
-              <NotificationsOutlined />
+              <NotificationsOutlined fontSize="small" />
             )}
           </IconButton>
         </Tooltip>
 
-        {/* Theme Toggle Switch */}
-        <Tooltip title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isDarkMode}
-                onChange={toggleTheme}
-                icon={<WbSunny sx={{ color: '#f57c00', fontSize: 20 }} />}
-                checkedIcon={<DarkMode sx={{ color: '#90caf9', fontSize: 20 }} />}
-                sx={{
-                  '& .MuiSwitch-switchBase': {
-                    '&.Mui-checked': {
-                      color: '#90caf9',
-                      '& + .MuiSwitch-track': {
-                        backgroundColor: '#1a237e',
-                      },
-                    },
-                  },
-                  '& .MuiSwitch-track': {
-                    backgroundColor: '#e0e0e0',
-                  },
-                }}
-              />
-            }
-            label={isDarkMode ? 'Dark' : 'Light'}
-            labelPlacement="end"
-            sx={{ 
-              m: 0,
-              '& .MuiFormControlLabel-label': {
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                color: 'text.secondary',
-                ml: 0.5,
-              }
+        {/* Theme toggle icon */}
+        <Tooltip title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
+          <IconButton
+            size="small"
+            onClick={toggleTheme}
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            sx={{
+              p: 1,
+              transition: 'transform 0.3s ease, color 0.3s ease',
+              '&:hover': {
+                backgroundColor: 'action.hover',
+              },
+              '&:active': {
+                transform: 'scale(0.9)',
+              },
+              '&:focus-visible': {
+                outline: `2px solid currentColor`,
+                outlineOffset: 2,
+              },
             }}
-          />
+          >
+            {isDarkMode ? (
+              <MoonIcon 
+                fontSize="small"
+                sx={{ 
+                  color: '#90caf9',
+                  transition: 'color 0.3s ease',
+                }} 
+              />
+            ) : (
+              <SunIcon 
+                fontSize="small"
+                sx={{ 
+                  color: '#f57c00',
+                  transition: 'color 0.3s ease',
+                }} 
+              />
+            )}
+          </IconButton>
         </Tooltip>
       </Box>
 
-      {/* Notification Drawer */}
       <NotificationDrawer
         open={notificationOpen}
         onClose={handleNotificationClose}
