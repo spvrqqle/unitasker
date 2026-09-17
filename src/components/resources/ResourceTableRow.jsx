@@ -95,9 +95,7 @@ const ResourceTableRow = ({ resource, onOpen, onDelete, isOpening }) => {
   const formatDate = (dateString) => {
     if (!dateString) return '—';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric',
-    });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const isLink = resource.kind === 'link';
@@ -112,9 +110,15 @@ const ResourceTableRow = ({ resource, onOpen, onDelete, isOpening }) => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
-              width: 32, height: 32, borderRadius: 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              bgcolor: `${color}20`, color: color, flexShrink: 0,
+              width: 32,
+              height: 32,
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: `${color}20`,
+              color: color,
+              flexShrink: 0,
             }}
           >
             <Icon sx={{ fontSize: 18 }} />
@@ -123,8 +127,12 @@ const ResourceTableRow = ({ resource, onOpen, onDelete, isOpening }) => {
             <Typography
               variant="body2"
               sx={{
-                fontWeight: 500, fontSize: '0.85rem', maxWidth: 280,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                fontWeight: 500,
+                fontSize: '0.85rem',
+                maxWidth: 280,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
               {resource.name}
@@ -160,7 +168,14 @@ const ResourceTableRow = ({ resource, onOpen, onDelete, isOpening }) => {
                 size="small"
                 onClick={() => onOpen(resource)}
                 disabled={isOpening}
-                sx={{ color: 'primary.main' }}
+                aria-label={isLink ? `Open ${resource.name}` : `Open file ${resource.name}`}
+                sx={{
+                  color: 'primary.main',
+                  '&:focus-visible': {
+                    outline: `2px solid currentColor`,
+                    outlineOffset: 2,
+                  },
+                }}
               >
                 {isOpening ? <CircularProgress size={16} /> : <OpenIcon fontSize="small" />}
               </IconButton>
@@ -170,7 +185,14 @@ const ResourceTableRow = ({ resource, onOpen, onDelete, isOpening }) => {
             <IconButton
               size="small"
               onClick={() => onDelete(resource)}
-              sx={{ color: 'text.secondary' }}
+              aria-label={`Remove ${resource.name}`}
+              sx={{
+                color: 'text.secondary',
+                '&:focus-visible': {
+                  outline: `2px solid currentColor`,
+                  outlineOffset: 2,
+                },
+              }}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -27,9 +27,8 @@ import {
   DialogContentText,
   DialogActions,
   Tooltip,
-} from "@mui/material";
+} from '@mui/material';
 import {
-  Add as AddIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
   GridView as GridViewIcon,
@@ -37,15 +36,15 @@ import {
   Refresh as RefreshIcon,
   Link as LinkIcon,
   FolderOpen as FolderOpenIcon,
-} from "@mui/icons-material";
-import ResourceCard from "./ResourceCard";
-import ResourceTableRow from "./ResourceTableRow";
-import LinkFormDialog from "./LinkFormDialog";
-import { useResources } from "../../hooks/useResources";
+} from '@mui/icons-material';
+import ResourceCard from './ResourceCard';
+import ResourceTableRow from './ResourceTableRow';
+import LinkFormDialog from './LinkFormDialog';
+import { useResources } from '../../hooks/useResources';
 
 const ResourceManager = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fileInputRef = useRef(null);
 
   const {
@@ -63,23 +62,16 @@ const ResourceManager = () => {
     setError,
   } = useResources();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState("grid");
-  const [sortBy, setSortBy] = useState("uploadedAt");
-  const [sortDirection, setSortDirection] = useState("desc");
-  const [deleteDialog, setDeleteDialog] = useState({
-    open: false,
-    resource: null,
-  });
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('grid');
+  const [sortBy, setSortBy] = useState('uploadedAt');
+  const [sortDirection, setSortDirection] = useState('desc');
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, resource: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [uploading, setUploading] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 
-  const showSnackbar = (message, severity = "info") => {
+  const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity });
   };
 
@@ -88,12 +80,11 @@ const ResourceManager = () => {
 
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      result = result.filter(
-        (r) =>
-          r.name.toLowerCase().includes(search) ||
-          (r.type && r.type.toLowerCase().includes(search)) ||
-          (r.url && r.url.toLowerCase().includes(search)) ||
-          (r.description && r.description.toLowerCase().includes(search)),
+      result = result.filter(r =>
+        r.name.toLowerCase().includes(search) ||
+        (r.type && r.type.toLowerCase().includes(search)) ||
+        (r.url && r.url.toLowerCase().includes(search)) ||
+        (r.description && r.description.toLowerCase().includes(search))
       );
     }
 
@@ -101,38 +92,35 @@ const ResourceManager = () => {
       let cmpA = a[sortBy];
       let cmpB = b[sortBy];
 
-      if (sortBy === "uploadedAt" || sortBy === "lastAccessed") {
+      if (sortBy === 'uploadedAt' || sortBy === 'lastAccessed') {
         cmpA = cmpA ? new Date(cmpA).getTime() : 0;
         cmpB = cmpB ? new Date(cmpB).getTime() : 0;
-      } else if (sortBy === "size") {
+      } else if (sortBy === 'size') {
         cmpA = cmpA || 0;
         cmpB = cmpB || 0;
       } else {
-        cmpA = String(cmpA || "").toLowerCase();
-        cmpB = String(cmpB || "").toLowerCase();
+        cmpA = String(cmpA || '').toLowerCase();
+        cmpB = String(cmpB || '').toLowerCase();
       }
 
-      if (cmpA < cmpB) return sortDirection === "asc" ? -1 : 1;
-      if (cmpA > cmpB) return sortDirection === "asc" ? 1 : -1;
+      if (cmpA < cmpB) return sortDirection === 'asc' ? -1 : 1;
+      if (cmpA > cmpB) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
     return result;
   }, [resources, searchTerm, sortBy, sortDirection]);
 
-  // ---------- Add handlers ----------
-
-  // Opens the native OS file explorer
   const handleBrowseFiles = async () => {
     if (fileSystemSupported) {
       try {
         setUploading(true);
         const result = await addFileWithPicker();
         if (result) {
-          showSnackbar(`"${result.name}" added successfully`, "success");
+          showSnackbar(`"${result.name}" added`, 'success');
         }
       } catch (err) {
-        showSnackbar(err.message || "Failed to add file", "error");
+        showSnackbar(err.message || 'Failed to add file', 'error');
       } finally {
         setUploading(false);
       }
@@ -147,37 +135,32 @@ const ResourceManager = () => {
     try {
       setUploading(true);
       const result = await addFileFallback(file);
-      showSnackbar(`"${result.name}" added successfully`, "success");
+      showSnackbar(`"${result.name}" added`, 'success');
     } catch (err) {
-      showSnackbar(err.message || "Failed to add file", "error");
+      showSnackbar(err.message || 'Failed to add file', 'error');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleAddLink = async (linkData) => {
     try {
       const result = await addLink(linkData);
-      showSnackbar(`"${result.name}" added successfully`, "success");
+      showSnackbar(`"${result.name}" added`, 'success');
       setLinkDialogOpen(false);
     } catch (err) {
-      showSnackbar(err.message || "Failed to add link", "error");
+      showSnackbar(err.message || 'Failed to add link', 'error');
     }
   };
-
-  // ---------- Open / Delete ----------
 
   const handleOpen = async (resource) => {
     try {
       await openResource(resource);
-      const label =
-        resource.kind === "link"
-          ? "Opening link..."
-          : `Opening "${resource.name}"...`;
-      showSnackbar(label, "info");
+      const label = resource.kind === 'link' ? 'Opening link...' : `Opening "${resource.name}"...`;
+      showSnackbar(label, 'info');
     } catch (err) {
-      showSnackbar(err.message || "Failed to open", "error");
+      showSnackbar(err.message || 'Failed to open', 'error');
     }
   };
 
@@ -190,9 +173,9 @@ const ResourceManager = () => {
     if (!resource) return;
     try {
       await removeResource(resource.id);
-      showSnackbar(`"${resource.name}" removed`, "success");
+      showSnackbar(`"${resource.name}" removed`, 'success');
     } catch (err) {
-      showSnackbar(err.message || "Failed to remove", "error");
+      showSnackbar(err.message || 'Failed to remove', 'error');
     } finally {
       setDeleteDialog({ open: false, resource: null });
     }
@@ -200,70 +183,67 @@ const ResourceManager = () => {
 
   const handleSort = (column) => {
     if (sortBy === column) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortBy(column);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
   return (
-    <Box
-      sx={{
-        height: "calc(100vh - 140px)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        overflow: "hidden",
-      }}
-    >
+    <Box sx={{
+      height: 'calc(100vh - 140px)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 2,
+      overflow: 'hidden',
+    }}>
       {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 2,
-          flexWrap: "wrap",
-          flexShrink: 0,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 2,
+        flexWrap: 'wrap',
+        flexShrink: 0,
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
             Resources
-            <Typography
-              component="span"
-              color="text.secondary"
-              sx={{ ml: 1, fontWeight: 400, fontSize: "0.9rem" }}
-            >
+            <Typography component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400, fontSize: '0.9rem' }}>
               ({filteredResources.length})
             </Typography>
           </Typography>
-          <IconButton size="small" onClick={refreshResources} title="Refresh">
-            <RefreshIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Refresh" arrow>
+            <Button
+              size="small"
+              onClick={refreshResources}
+              aria-label="Refresh resources"
+              sx={{ minWidth: 0, p: 0.5 }}
+            >
+              <RefreshIcon fontSize="small" />
+            </Button>
+          </Tooltip>
         </Box>
 
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
           <ToggleButtonGroup
             value={viewMode}
             exclusive
             onChange={(e, val) => val && setViewMode(val)}
             size="small"
+            aria-label="View mode"
           >
-            <ToggleButton value="grid" sx={{ px: 1, py: 0.5 }}>
-              <GridViewIcon fontSize="small" />
-            </ToggleButton>
-            <ToggleButton value="table" sx={{ px: 1, py: 0.5 }}>
-              <ViewListIcon fontSize="small" />
-            </ToggleButton>
+            <Tooltip title="Grid view" arrow>
+              <ToggleButton value="grid" sx={{ px: 1, py: 0.5 }} aria-label="Grid view">
+                <GridViewIcon fontSize="small" />
+              </ToggleButton>
+            </Tooltip>
+            <Tooltip title="Table view" arrow>
+              <ToggleButton value="table" sx={{ px: 1, py: 0.5 }} aria-label="Table view">
+                <ViewListIcon fontSize="small" />
+              </ToggleButton>
+            </Tooltip>
           </ToggleButtonGroup>
 
           <Tooltip title="Paste a link to a Drive, GitHub, or web file" arrow>
@@ -277,19 +257,10 @@ const ResourceManager = () => {
             </Button>
           </Tooltip>
 
-          <Tooltip
-            title="Open your computer's file explorer to select a file"
-            arrow
-          >
+          <Tooltip title="Open your computer's file explorer to select a file" arrow>
             <Button
               variant="contained"
-              startIcon={
-                uploading ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <FolderOpenIcon />
-                )
-              }
+              startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : <FolderOpenIcon />}
               onClick={handleBrowseFiles}
               disabled={uploading}
               size="small"
@@ -307,12 +278,10 @@ const ResourceManager = () => {
         </Box>
       </Box>
 
-      {/* Fallback browser info banner */}
+      {/* Fallback browser banner */}
       {!fileSystemSupported && (
         <Alert severity="info" sx={{ flexShrink: 0, py: 0.5 }}>
-          Your browser doesn't fully support the File System Access API. Files
-          added here will only store metadata — you'll need to re-select the
-          file each time. Links work everywhere.
+          Your browser doesn't fully support the File System Access API. Files added here will only store metadata — you'll need to re-select the file each time. Links work everywhere.
         </Alert>
       )}
 
@@ -333,9 +302,11 @@ const ResourceManager = () => {
             ),
             endAdornment: searchTerm ? (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearchTerm("")}>
-                  <ClearIcon fontSize="small" />
-                </IconButton>
+                <Tooltip title="Clear search" arrow>
+                  <IconButton size="small" onClick={() => setSearchTerm('')} aria-label="Clear search">
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               </InputAdornment>
             ) : null,
           },
@@ -344,42 +315,36 @@ const ResourceManager = () => {
 
       {/* Error */}
       {error && (
-        <Alert
-          severity="error"
-          onClose={() => setError(null)}
-          sx={{ flexShrink: 0 }}
-        >
+        <Alert severity="error" onClose={() => setError(null)} sx={{ flexShrink: 0 }}>
           {error}
         </Alert>
       )}
 
       {/* Content */}
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress />
           </Box>
         ) : filteredResources.length === 0 ? (
-          <Paper
-            sx={{ p: 4, textAlign: "center", bgcolor: "background.paper" }}
-          >
+          <Paper sx={{
+            p: 5,
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 2,
+          }}>
+            <FolderOpenIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              {searchTerm ? "No matching resources" : "No resources yet"}
+              {searchTerm ? 'No matching resources' : 'No resources yet'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {searchTerm
-                ? "Try a different search term."
-                : "Add links to your files, drives, or websites — or browse your computer to reference local files."}
+                ? 'Try a different search term.'
+                : 'Add links to your files, drives, or websites — or browse your computer to reference local files.'}
             </Typography>
             {!searchTerm && (
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  justifyContent: "center",
-                  flexWrap: "wrap",
-                }}
-              >
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <Button
                   variant="outlined"
                   startIcon={<LinkIcon />}
@@ -397,23 +362,26 @@ const ResourceManager = () => {
                 </Button>
               </Box>
             )}
+            {searchTerm && (
+              <Button variant="outlined" onClick={() => setSearchTerm('')}>
+                Clear Search
+              </Button>
+            )}
           </Paper>
-        ) : viewMode === "grid" ? (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(3, 1fr)",
-                lg: "repeat(4, 1fr)",
-              },
-              gap: 2,
-              width: "100%",
-            }}
-          >
+        ) : viewMode === 'grid' ? (
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(4, 1fr)',
+            },
+            gap: 2,
+            width: '100%',
+          }}>
             {filteredResources.map((resource) => (
-              <Box key={resource.id} sx={{ width: "100%", minWidth: 0 }}>
+              <Box key={resource.id} sx={{ width: '100%', minWidth: 0 }}>
                 <ResourceCard
                   resource={resource}
                   onOpen={handleOpen}
@@ -424,58 +392,51 @@ const ResourceManager = () => {
             ))}
           </Box>
         ) : (
-          <TableContainer
-            component={Paper}
-            sx={{ bgcolor: "background.paper" }}
-          >
+          <TableContainer component={Paper} sx={{ bgcolor: 'background.paper', border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>
                     <TableSortLabel
-                      active={sortBy === "name"}
-                      direction={sortBy === "name" ? sortDirection : "asc"}
-                      onClick={() => handleSort("name")}
+                      active={sortBy === 'name'}
+                      direction={sortBy === 'name' ? sortDirection : 'asc'}
+                      onClick={() => handleSort('name')}
                     >
                       Name
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>
                     <TableSortLabel
-                      active={sortBy === "type"}
-                      direction={sortBy === "type" ? sortDirection : "asc"}
-                      onClick={() => handleSort("type")}
+                      active={sortBy === 'type'}
+                      direction={sortBy === 'type' ? sortDirection : 'asc'}
+                      onClick={() => handleSort('type')}
                     >
                       Type
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>
                     <TableSortLabel
-                      active={sortBy === "size"}
-                      direction={sortBy === "size" ? sortDirection : "asc"}
-                      onClick={() => handleSort("size")}
+                      active={sortBy === 'size'}
+                      direction={sortBy === 'size' ? sortDirection : 'asc'}
+                      onClick={() => handleSort('size')}
                     >
                       Size
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>
                     <TableSortLabel
-                      active={sortBy === "uploadedAt"}
-                      direction={
-                        sortBy === "uploadedAt" ? sortDirection : "asc"
-                      }
-                      onClick={() => handleSort("uploadedAt")}
+                      active={sortBy === 'uploadedAt'}
+                      direction={sortBy === 'uploadedAt' ? sortDirection : 'asc'}
+                      onClick={() => handleSort('uploadedAt')}
                     >
                       Added
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>
                     <TableSortLabel
-                      active={sortBy === "lastAccessed"}
-                      direction={
-                        sortBy === "lastAccessed" ? sortDirection : "asc"
-                      }
-                      onClick={() => handleSort("lastAccessed")}
+                      active={sortBy === 'lastAccessed'}
+                      direction={sortBy === 'lastAccessed' ? sortDirection : 'asc'}
+                      onClick={() => handleSort('lastAccessed')}
                     >
                       Last Opened
                     </TableSortLabel>
@@ -499,14 +460,14 @@ const ResourceManager = () => {
         )}
       </Box>
 
-      {/* Link Dialog */}
+      {/* Link dialog */}
       <LinkFormDialog
         open={linkDialogOpen}
         onClose={() => setLinkDialogOpen(false)}
         onSave={handleAddLink}
       />
 
-      {/* Delete Confirmation */}
+      {/* Delete confirmation */}
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, resource: null })}
@@ -517,22 +478,16 @@ const ResourceManager = () => {
         <DialogContent>
           <DialogContentText>
             Remove <strong>{deleteDialog.resource?.name}</strong>?
-            {deleteDialog.resource?.kind === "file"
-              ? " The actual file on your disk will not be deleted."
-              : " No external data will be affected."}
+            {deleteDialog.resource?.kind === 'file'
+              ? ' The actual file on your disk will not be deleted.'
+              : ' No external data will be affected.'}
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteDialog({ open: false, resource: null })}
-          >
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setDeleteDialog({ open: false, resource: null })} color="inherit">
             Cancel
           </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            color="error"
-            variant="contained"
-          >
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
             Remove
           </Button>
         </DialogActions>
@@ -541,14 +496,14 @@ const ResourceManager = () => {
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
+        autoHideDuration={2500}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>

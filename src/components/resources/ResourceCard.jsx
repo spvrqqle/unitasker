@@ -128,16 +128,13 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'Never';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric',
-    });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const isLink = resource.kind === 'link';
   const { Icon, color } = isLink
     ? getLinkTypeInfo(resource.url)
     : getFileTypeInfo(resource.type, resource.name);
-
   const typeLabel = getTypeLabel(resource);
 
   const subtitle = isLink
@@ -150,20 +147,19 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
         bgcolor: 'background.paper',
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
-        transition: 'all 0.15s',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: theme.shadows[4],
-        },
+        transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
         display: 'flex',
         flexDirection: 'column',
         height: 190,
         width: '100%',
         overflow: 'hidden',
+        '&:hover': {
+          boxShadow: theme.shadows[3],
+        },
       }}
     >
-      <CardContent sx={{ 
-        p: 1.75, 
+      <CardContent sx={{
+        p: 1.75,
         '&:last-child': { pb: 1.75 },
         display: 'flex',
         flexDirection: 'column',
@@ -171,12 +167,7 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
         minHeight: 0,
         overflow: 'hidden',
       }}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          mb: 1.25,
-        }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
           <Box
             sx={{
               width: 40,
@@ -212,6 +203,7 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
         <Tooltip title={resource.name} arrow placement="top">
           <Typography
             variant="body2"
+            component="div"
             sx={{
               fontWeight: 600,
               fontSize: '0.85rem',
@@ -233,9 +225,10 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ 
-                display: 'block', 
-                fontSize: '0.68rem', 
+              component="div"
+              sx={{
+                display: 'block',
+                fontSize: '0.68rem',
                 lineHeight: 1.4,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -248,15 +241,16 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
           <Typography
             variant="caption"
             color="text.secondary"
+            component="div"
             sx={{ display: 'block', fontSize: '0.68rem', lineHeight: 1.4 }}
           >
             Added {formatDate(resource.uploadedAt)}
           </Typography>
         </Box>
 
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'flex-end', 
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
           gap: 0.5,
           pt: 0.75,
           borderTop: `1px solid ${theme.palette.divider}`,
@@ -268,13 +262,17 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
                 size="small"
                 onClick={() => onOpen(resource)}
                 disabled={isOpening}
-                sx={{ color: 'primary.main', p: 0.5 }}
+                aria-label={isLink ? `Open ${resource.name}` : `Open file ${resource.name}`}
+                sx={{
+                  color: 'primary.main',
+                  p: 0.5,
+                  '&:focus-visible': {
+                    outline: `2px solid currentColor`,
+                    outlineOffset: 2,
+                  },
+                }}
               >
-                {isOpening ? (
-                  <CircularProgress size={16} />
-                ) : (
-                  <OpenIcon sx={{ fontSize: 18 }} />
-                )}
+                {isOpening ? <CircularProgress size={16} /> : <OpenIcon sx={{ fontSize: 18 }} />}
               </IconButton>
             </span>
           </Tooltip>
@@ -282,7 +280,15 @@ const ResourceCard = ({ resource, onOpen, onDelete, isOpening }) => {
             <IconButton
               size="small"
               onClick={() => onDelete(resource)}
-              sx={{ color: 'text.secondary', p: 0.5 }}
+              aria-label={`Remove ${resource.name}`}
+              sx={{
+                color: 'text.secondary',
+                p: 0.5,
+                '&:focus-visible': {
+                  outline: `2px solid currentColor`,
+                  outlineOffset: 2,
+                },
+              }}
             >
               <DeleteIcon sx={{ fontSize: 18 }} />
             </IconButton>
