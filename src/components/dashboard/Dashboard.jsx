@@ -104,7 +104,6 @@ const Dashboard = () => {
     }
   };
 
-  // ---------- Navigation ----------
   const navigate = (tab) => {
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: tab }));
   };
@@ -115,7 +114,6 @@ const Dashboard = () => {
   const handleNavigateToResources = () => navigate(4);
   const handleNavigateToTimer = () => navigate(5);
 
-  // ---------- Timer toggle with feedback ----------
   const handleTimerToggle = () => {
     if (isRunning) {
       pause();
@@ -126,11 +124,11 @@ const Dashboard = () => {
     }
   };
 
-  // ---------- Reusable: card shell ----------
+  // ---------- Card shell ----------
   const SectionCard = ({ title, children, onViewAll, footerLabel }) => (
     <Paper
       sx={{
-        p: 2,
+        p: 1.5,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -147,12 +145,12 @@ const Dashboard = () => {
           fontWeight: 700,
           fontSize: '0.85rem',
           flexShrink: 0,
-          mb: 1,
+          mb: 0.5,
         }}
       >
         {title}
       </Typography>
-      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {children}
       </Box>
       {onViewAll && (
@@ -162,7 +160,7 @@ const Dashboard = () => {
           sx={{
             fontSize: '0.7rem',
             flexShrink: 0,
-            mt: 1,
+            mt: 0.5,
             alignSelf: 'flex-start',
             p: 0.5,
             minWidth: 0,
@@ -181,7 +179,7 @@ const Dashboard = () => {
     </Paper>
   );
 
-  // ---------- Reusable: empty state ----------
+  // ---------- Compact empty state ----------
   const EmptyState = ({ icon, primary, hint }) => (
     <Box
       sx={{
@@ -191,32 +189,48 @@ const Dashboard = () => {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 0.5,
-        py: 2,
+        py: 1,
         px: 1,
         textAlign: 'center',
+        minHeight: 0,
+        overflow: 'hidden',
       }}
     >
       {icon && (
-        <Box sx={{ color: 'text.disabled', mb: 0.5, '& svg': { fontSize: 28 } }}>
+        <Box sx={{ color: 'text.disabled', '& svg': { fontSize: 22 } }}>
           {icon}
         </Box>
       )}
-      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary', fontWeight: 500 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          fontSize: '0.75rem',
+          color: 'text.secondary',
+          fontWeight: 500,
+          lineHeight: 1.2,
+        }}
+      >
         {primary}
       </Typography>
       {hint && (
-        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            fontSize: '0.65rem',
+            color: 'text.disabled',
+            lineHeight: 1.2,
+          }}
+        >
           {hint}
         </Typography>
       )}
     </Box>
   );
 
-  // ---------- Reusable: loading skeleton ----------
   const LoadingSkeleton = ({ rows = 3 }) => (
-    <Box sx={{ py: 1 }}>
+    <Box sx={{ py: 0.5 }}>
       {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} variant="text" height={24} sx={{ fontSize: '0.8rem' }} />
+        <Skeleton key={i} variant="text" height={20} sx={{ fontSize: '0.75rem' }} />
       ))}
     </Box>
   );
@@ -240,10 +254,9 @@ const Dashboard = () => {
         bgcolor: 'background.paper',
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
-        transition: 'all 0.15s ease',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
         '&:hover': onClick ? {
-          transform: 'translateY(-2px)',
-          boxShadow: theme.shadows[4],
+          boxShadow: theme.shadows[3],
         } : {},
         '&:focus-visible': onClick ? {
           outline: `2px solid ${theme.palette.primary.main}`,
@@ -252,17 +265,17 @@ const Dashboard = () => {
       }}
     >
       <CardContent sx={{
-        p: 2,
-        '&:last-child': { pb: 2 },
+        p: 1.5,
+        '&:last-child': { pb: 1.5 },
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
         <Box>
           {loading ? (
-            <Skeleton variant="text" width={40} height={40} />
+            <Skeleton variant="text" width={40} height={36} />
           ) : (
-            <Typography variant="h3" sx={{ fontWeight: 700, lineHeight: 1.1, fontSize: '2rem' }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.1, fontSize: '1.75rem' }}>
               {value}
             </Typography>
           )}
@@ -272,8 +285,8 @@ const Dashboard = () => {
         </Box>
         <Box
           sx={{
-            p: 1,
-            borderRadius: 2,
+            p: 0.75,
+            borderRadius: 1.5,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -287,7 +300,7 @@ const Dashboard = () => {
     </Card>
   );
 
-  // ---------- Task list renderer ----------
+  // ---------- List renderers ----------
   const renderTaskList = (tasks, emptyContent, maxItems = 5) => {
     if (loading) return <LoadingSkeleton rows={3} />;
     if (error) return <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>Failed to load</Alert>;
@@ -299,6 +312,7 @@ const Dashboard = () => {
         sx={{
           py: 0,
           flex: 1,
+          minHeight: 0,
           overflow: 'auto',
           '&::-webkit-scrollbar': { width: '4px' },
           '&::-webkit-scrollbar-thumb': {
@@ -363,7 +377,6 @@ const Dashboard = () => {
     );
   };
 
-  // ---------- Note list renderer ----------
   const renderNoteList = (notes, emptyContent, maxItems = 4) => {
     if (loading) return <LoadingSkeleton rows={3} />;
     if (error) return <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>Failed to load</Alert>;
@@ -375,6 +388,7 @@ const Dashboard = () => {
         sx={{
           py: 0,
           flex: 1,
+          minHeight: 0,
           overflow: 'auto',
           '&::-webkit-scrollbar': { width: '4px' },
           '&::-webkit-scrollbar-thumb': {
@@ -419,7 +433,6 @@ const Dashboard = () => {
     );
   };
 
-  // ---------- Event list renderer ----------
   const renderEventList = (events, emptyContent, maxItems = 3) => {
     if (loading) return <LoadingSkeleton rows={2} />;
     if (error) return <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>Failed to load</Alert>;
@@ -431,6 +444,7 @@ const Dashboard = () => {
         sx={{
           py: 0,
           flex: 1,
+          minHeight: 0,
           overflow: 'auto',
           '&::-webkit-scrollbar': { width: '4px' },
           '&::-webkit-scrollbar-thumb': {
@@ -483,6 +497,7 @@ const Dashboard = () => {
       flexDirection: 'column',
       gap: 1.5,
       overflow: 'hidden',
+      pt: 0.5,
     }}>
       {/* Row 1: Stat cards */}
       <Box sx={{
@@ -490,27 +505,28 @@ const Dashboard = () => {
         gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
         gap: 1.5,
         flexShrink: 0,
+        py: 0.5,
       }}>
         <StatCard
-          icon={<TaskIcon sx={{ fontSize: 20 }} />}
+          icon={<TaskIcon sx={{ fontSize: 18 }} />}
           title="Open tasks"
           value={stats.openTasks}
           onClick={handleNavigateToTasks}
         />
         <StatCard
-          icon={<WarningIcon sx={{ fontSize: 20 }} />}
+          icon={<WarningIcon sx={{ fontSize: 18 }} />}
           title="Due today"
           value={stats.dueToday}
           onClick={handleNavigateToTasks}
         />
         <StatCard
-          icon={<NoteIcon sx={{ fontSize: 20 }} />}
+          icon={<NoteIcon sx={{ fontSize: 18 }} />}
           title="Notes"
           value={stats.notesCount}
           onClick={handleNavigateToNotes}
         />
         <StatCard
-          icon={<EventIcon sx={{ fontSize: 20 }} />}
+          icon={<EventIcon sx={{ fontSize: 18 }} />}
           title="Events"
           value={stats.eventsCount}
           onClick={handleNavigateToCalendar}
@@ -598,7 +614,7 @@ const Dashboard = () => {
           minHeight: 0,
           overflow: 'hidden',
         }}>
-          {/* Today's Tasks + Upcoming Deadlines */}
+          {/* Today + Upcoming */}
           <Box sx={{
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -677,7 +693,7 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        {/* Right: Focus Timer widget */}
+        {/* Focus Timer widget */}
         {isTwoColumn && (
           <Paper sx={{
             p: 3,
@@ -760,7 +776,6 @@ const Dashboard = () => {
         )}
       </Box>
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={2500}
