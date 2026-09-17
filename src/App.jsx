@@ -14,15 +14,19 @@ import NoteList from './components/notes/NoteList';
 import CalendarView from './components/calendar/CalendarView';
 import ResourceManager from './components/resources/ResourceManager';
 import TimerView from './components/timer/TimerView';
+import Settings from './components/settings/Settings';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
-import Settings from './components/settings/Settings';
+import { useReminders } from './hooks/useReminders';
 
 const AppContent = () => {
   const { theme } = useTheme();
   const { appLoading, error, isDBReady } = useAppContext();
   const isOnline = useOnlineStatus();
   const [currentTab, setCurrentTab] = useState(0);
+
+  // Fire reminders in the background
+  useReminders();
 
   useEffect(() => {
     const handleNavigationChange = (event) => {
@@ -47,7 +51,7 @@ const AppContent = () => {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '100vh',
-          gap: 3
+          gap: 3,
         }}>
           <CircularProgress size={60} />
           <Typography variant="h6" color="text.secondary">
@@ -70,7 +74,7 @@ const AppContent = () => {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '100vh',
-          p: 3
+          p: 3,
         }}>
           <Alert severity="error" sx={{ maxWidth: 500 }}>
             <Typography variant="h6">Failed to initialize app</Typography>
@@ -82,23 +86,15 @@ const AppContent = () => {
   }
 
   const renderView = () => {
-    switch(currentTab) {
-      case 0:
-        return <Dashboard />;
-      case 1:
-        return <TaskList />;
-      case 2:
-        return <NoteList />;
-      case 3:
-        return <CalendarView />;
-      case 4:
-        return <ResourceManager />;
-      case 5:
-        return <TimerView />;
-      case 6:
-        return <Settings />;
-      default:
-        return <Dashboard />;
+    switch (currentTab) {
+      case 0: return <Dashboard />;
+      case 1: return <TaskList />;
+      case 2: return <NoteList />;
+      case 3: return <CalendarView />;
+      case 4: return <ResourceManager />;
+      case 5: return <TimerView />;
+      case 6: return <Settings />;
+      default: return <Dashboard />;
     }
   };
 
@@ -129,7 +125,7 @@ const AppContent = () => {
             alignItems: 'center',
             mb: 3,
             flexWrap: 'wrap',
-            gap: 2
+            gap: 2,
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
