@@ -9,10 +9,15 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tooltip,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  FilterList as FilterIcon,
+} from '@mui/icons-material';
 
 const NoteFilters = ({
   filters,
@@ -42,18 +47,17 @@ const NoteFilters = ({
       <Box
         sx={{
           display: 'flex',
-          gap: 2,
+          gap: 1.5,
           flexDirection: isMobile ? 'column' : 'row',
           alignItems: 'center',
         }}
       >
-        {/* Search */}
         <TextField
           placeholder="Search notes by title, content, or tags..."
           value={filters.searchTerm || ''}
           onChange={handleSearchChange}
           size="small"
-          sx={{ flex: 3 }}
+          sx={{ flex: 3, width: '100%' }}
           slotProps={{
             input: {
               startAdornment: (
@@ -63,19 +67,21 @@ const NoteFilters = ({
               ),
               endAdornment: filters.searchTerm ? (
                 <InputAdornment position="end">
-                  <ClearIcon
-                    fontSize="small"
-                    sx={{ cursor: 'pointer' }}
-                    onClick={handleClearSearch}
-                  />
+                  <Tooltip title="Clear search" arrow>
+                    <ClearIcon
+                      fontSize="small"
+                      sx={{ cursor: 'pointer' }}
+                      onClick={handleClearSearch}
+                      aria-label="Clear search"
+                    />
+                  </Tooltip>
                 </InputAdornment>
               ) : null,
             },
           }}
         />
 
-        {/* Tag Filter */}
-        <FormControl size="small" sx={{ flex: 1, minWidth: 150 }}>
+        <FormControl size="small" sx={{ flex: 1, minWidth: 150, width: isMobile ? '100%' : 'auto' }}>
           <InputLabel id="note-tag-filter-label">Filter by Tag</InputLabel>
           <Select
             labelId="note-tag-filter-label"
@@ -95,12 +101,14 @@ const NoteFilters = ({
 
       {hasActiveFilters && (
         <Box sx={{ mt: 2 }}>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
+            <FilterIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
             {filters.searchTerm && (
               <Chip
                 label={`Search: "${filters.searchTerm}"`}
                 size="small"
                 onDelete={handleClearSearch}
+                sx={{ height: 24, '& .MuiChip-label': { fontSize: '0.7rem' } }}
               />
             )}
             {filters.selectedTag && (
@@ -108,16 +116,16 @@ const NoteFilters = ({
                 label={`Tag: ${filters.selectedTag}`}
                 size="small"
                 onDelete={() => onFilterChange({ ...filters, selectedTag: '' })}
+                sx={{ height: 24, '& .MuiChip-label': { fontSize: '0.7rem' } }}
               />
             )}
-            {(filters.searchTerm || filters.selectedTag) && (
-              <Chip
-                label="Clear All"
-                size="small"
-                color="primary"
-                onClick={onClearFilters}
-              />
-            )}
+            <Chip
+              label="Clear all"
+              size="small"
+              color="primary"
+              onClick={onClearFilters}
+              sx={{ height: 24, '& .MuiChip-label': { fontSize: '0.7rem' }, cursor: 'pointer' }}
+            />
           </Stack>
         </Box>
       )}

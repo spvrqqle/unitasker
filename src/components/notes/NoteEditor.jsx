@@ -6,7 +6,6 @@ import {
   DialogActions,
   TextField,
   Button,
-  Box,
   Stack,
   Chip,
   IconButton,
@@ -16,20 +15,18 @@ import {
 } from '@mui/material';
 import {
   Close as CloseIcon,
-  Add as AddIcon,
   Label as LabelIcon,
 } from '@mui/icons-material';
 
-const NoteEditor = ({ 
-  open, 
-  onClose, 
-  onSave, 
-  note = null, 
-  existingTags = [] 
+const NoteEditor = ({
+  open,
+  onClose,
+  onSave,
+  note = null,
+  existingTags = [],
 }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  
   const isEditing = !!note;
 
   const [formData, setFormData] = useState({
@@ -37,9 +34,7 @@ const NoteEditor = ({
     content: '',
     tags: [],
   });
-
   const [errors, setErrors] = useState({});
-  const [newTag, setNewTag] = useState('');
 
   useEffect(() => {
     if (note) {
@@ -49,71 +44,34 @@ const NoteEditor = ({
         tags: note.tags || [],
       });
     } else {
-      setFormData({
-        title: '',
-        content: '',
-        tags: [],
-      });
+      setFormData({ title: '', content: '', tags: [] });
     }
     setErrors({});
-    setNewTag('');
   }, [note, open]);
 
-  const handleChange = (field) => (event) => {
-    const value = event.target.value;
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+  const handleChange = (field) => (e) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   const handleTagsChange = (event, newTags) => {
     setFormData(prev => ({ ...prev, tags: newTags }));
   };
 
-  const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({ 
-        ...prev, 
-        tags: [...prev.tags, newTag.trim()] 
-      }));
-      setNewTag('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
-  };
-
-  const handleKeyPress = (event) => {
-    if (event.key === 'Enter' && newTag.trim()) {
-      event.preventDefault();
-      handleAddTag();
-    }
-  };
-
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = () => {
-    if (!validateForm()) return;
-
-    const dataToSave = {
+    if (!validate()) return;
+    onSave({
       title: formData.title.trim(),
       content: formData.content || '',
       tags: formData.tags || [],
-    };
-
-    onSave(dataToSave);
+    });
   };
 
   return (
@@ -126,14 +84,13 @@ const NoteEditor = ({
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>{isEditing ? 'Edit Note' : 'Create New Note'}</span>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" aria-label="Close dialog">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <DialogContent dividers>
         <Stack spacing={3} sx={{ mt: 1 }}>
-          {/* Title */}
           <TextField
             label="Note Title *"
             value={formData.title}
@@ -143,9 +100,9 @@ const NoteEditor = ({
             fullWidth
             autoFocus
             placeholder="Enter note title..."
+            slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          {/* Content */}
           <TextField
             label="Content"
             value={formData.content}
@@ -154,82 +111,42 @@ const NoteEditor = ({
             rows={10}
             fullWidth
             placeholder="Write your note here..."
+            slotProps={{ inputLabel: { shrink: true } }}
             sx={{
               '& .MuiInputBase-root': {
-                fontFamily: 'monospace',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
                 fontSize: '0.9rem',
                 lineHeight: 1.6,
-              }
+              },
             }}
           />
 
-          {/* Tags */}
-          <Box>
-            <Autocomplete
-              multiple
-              freeSolo
-              options={existingTags || []}
-              value={formData.tags || []}
-              onChange={handleTagsChange}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    key={index}
-                    label={option}
-                    {...getTagProps({ index })}
-                    onDelete={() => handleRemoveTag(option)}
-                    size="small"
-                    icon={<LabelIcon sx={{ fontSize: 14 }} />}
-                  />
-                ))
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Tags"
-                  placeholder="Add tags..."
-                  helperText="Type a tag and press Enter to add"
+          <Autocomplete
+            multiple
+            freeSolo
+            options={existingTags || []}
+            value={formData.tags || []}
+            onChange={handleTagsChange}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  label={option}
+                  {...getTagProps({ index })}
+                  size="small"
+                  icon={<LabelIcon sx={{ fontSize: 14 }} />}
                 />
-              )}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.target.value) {
-                  e.preventDefault();
-                  const value = e.target.value.trim();
-                  if (value && !formData.tags.includes(value)) {
-                    setFormData(prev => ({
-                      ...prev,
-                      tags: [...prev.tags, value]
-                    }));
-                    // Clear the input
-                    setTimeout(() => {
-                      const input = document.querySelector('input[placeholder="Add tags..."]');
-                      if (input) input.value = '';
-                    }, 0);
-                  }
-                }
-              }}
-            />
-          </Box>
-
-          {/* Current Tags Display */}
-          {formData.tags && formData.tags.length > 0 && (
-            <Box>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                Current Tags:
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {formData.tags.map((tag, index) => (
-                  <Chip
-                    key={index}
-                    label={tag}
-                    size="small"
-                    onDelete={() => handleRemoveTag(tag)}
-                    icon={<LabelIcon sx={{ fontSize: 14 }} />}
-                  />
-                ))}
-              </Box>
-            </Box>
-          )}
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Tags"
+                placeholder="Add tags and press Enter"
+                helperText="Type a tag and press Enter to add it"
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            )}
+          />
         </Stack>
       </DialogContent>
 
@@ -237,11 +154,7 @@ const NoteEditor = ({
         <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="primary"
-        >
+        <Button onClick={handleSubmit} variant="contained">
           {isEditing ? 'Update Note' : 'Create Note'}
         </Button>
       </DialogActions>

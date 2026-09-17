@@ -7,10 +7,16 @@ import {
   Paper,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
+  Tooltip,
   useTheme,
   useMediaQuery,
   Grid,
-  IconButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -25,7 +31,7 @@ import { useNotes } from '../../hooks/useNotes';
 const NoteList = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const {
     notes,
     tags,
@@ -44,48 +50,52 @@ const NoteList = () => {
     selectedTag: '',
   });
   const [filteredNotes, setFilteredNotes] = useState([]);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, note: null });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info',
+  });
 
-  // Filter notes based on search and tag
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  // Filter notes
   useEffect(() => {
     let result = notes || [];
-    
-    // Tag filter
+
     if (filters.selectedTag) {
-      result = result.filter(note => 
-        note.tags && note.tags.includes(filters.selectedTag)
+      result = result.filter(
+        note => note.tags && note.tags.includes(filters.selectedTag)
       );
     }
-    
-    // Search filter
     if (filters.searchTerm) {
       const search = filters.searchTerm.toLowerCase();
-      result = result.filter(note =>
-        note.title.toLowerCase().includes(search) ||
-        note.content.toLowerCase().includes(search) ||
-        (note.tags && note.tags.some(tag => tag.toLowerCase().includes(search)))
+      result = result.filter(
+        note =>
+          note.title.toLowerCase().includes(search) ||
+          note.content.toLowerCase().includes(search) ||
+          (note.tags && note.tags.some(tag => tag.toLowerCase().includes(search)))
       );
     }
-    
+
     setFilteredNotes(result);
   }, [notes, filters]);
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
+  const handleFilterChange = (newFilters) => setFilters(newFilters);
 
   const handleClearFilters = () => {
-    setFilters({
-      searchTerm: '',
-      selectedTag: '',
-    });
+    setFilters({ searchTerm: '', selectedTag: '' });
   };
 
   const handleAddNote = async (noteData) => {
     try {
       await addNote(noteData);
       setFormOpen(false);
+      showSnackbar('Note created', 'success');
     } catch (err) {
-      console.error('Failed to add note:', err);
+      showSnackbar('Failed to create note', 'error');
     }
   };
 
@@ -94,18 +104,25 @@ const NoteList = () => {
       await editNote(editingNote.id, noteData);
       setFormOpen(false);
       setEditingNote(null);
+      showSnackbar('Note updated', 'success');
     } catch (err) {
-      console.error('Failed to update note:', err);
+      showSnackbar('Failed to update note', 'error');
     }
   };
 
-  const handleDeleteNote = async (id) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      try {
-        await removeNote(id);
-      } catch (err) {
-        console.error('Failed to delete note:', err);
-      }
+  const handleDeleteClick = (id) => {
+    const note = notes.find(n => n.id === id);
+    setDeleteDialog({ open: true, note });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await removeNote(deleteDialog.note.id);
+      showSnackbar('Note deleted', 'success');
+    } catch (err) {
+      showSnackbar('Failed to delete note', 'error');
+    } finally {
+      setDeleteDialog({ open: false, note: null });
     }
   };
 
@@ -119,7 +136,6 @@ const NoteList = () => {
     setEditingNote(null);
   };
 
-  // Loading state
   if (loading && notes.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -131,29 +147,37 @@ const NoteList = () => {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        mb: 3,
+        mb: 2,
         flexWrap: 'wrap',
         gap: 2,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
             Notes
-            <Typography component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
+            <Typography component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400, fontSize: '0.9rem' }}>
               ({filteredNotes.length})
             </Typography>
           </Typography>
-          <IconButton size="small" onClick={refreshNotes} title="Refresh notes">
-            <RefreshIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Refresh" arrow>
+            <Button
+              size="small"
+              onClick={refreshNotes}
+              aria-label="Refresh notes"
+              sx={{ minWidth: 0, p: 0.5 }}
+            >
+              <RefreshIcon fontSize="small" />
+            </Button>
+          </Tooltip>
         </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setFormOpen(true)}
+          aria-label="Create new note"
         >
           New Note
         </Button>
@@ -174,37 +198,46 @@ const NoteList = () => {
         </Alert>
       )}
 
-      {/* Note List */}
+      {/* List */}
       {filteredNotes.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
+        <Paper sx={{
+          p: 5,
+          textAlign: 'center',
+          bgcolor: 'background.paper',
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}>
           <NoteIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No notes found
+            {notes.length === 0 ? 'No notes yet' : 'No matching notes'}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {notes.length === 0 
-              ? 'Get started by creating your first note!' 
-              : 'Try adjusting your filters to see more notes.'}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {notes.length === 0
+              ? 'Capture your ideas, thoughts, and reminders.'
+              : 'Try adjusting your filters or search term.'}
           </Typography>
-          {notes.length === 0 && (
+          {notes.length === 0 ? (
             <Button
-              variant="outlined"
+              variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setFormOpen(true)}
-              sx={{ mt: 2 }}
             >
               Create First Note
+            </Button>
+          ) : (
+            <Button variant="outlined" onClick={handleClearFilters}>
+              Clear Filters
             </Button>
           )}
         </Paper>
       ) : (
         <Grid container spacing={2}>
-          {filteredNotes.map((note) => (
+          {filteredNotes.map(note => (
             <Grid item xs={12} sm={6} md={4} key={note.id}>
               <NoteCard
                 note={note}
                 onEdit={openEditForm}
-                onDelete={handleDeleteNote}
+                onDelete={handleDeleteClick}
               />
             </Grid>
           ))}
@@ -215,7 +248,7 @@ const NoteList = () => {
       {isMobile && (
         <Fab
           color="primary"
-          aria-label="add note"
+          aria-label="Add note"
           sx={{
             position: 'fixed',
             bottom: 80,
@@ -227,7 +260,7 @@ const NoteList = () => {
         </Fab>
       )}
 
-      {/* Note Editor Dialog */}
+      {/* Editor */}
       <NoteEditor
         open={formOpen}
         onClose={closeForm}
@@ -235,6 +268,46 @@ const NoteList = () => {
         note={editingNote}
         existingTags={tags}
       />
+
+      {/* Delete confirmation */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, note: null })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete Note?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete <strong>{deleteDialog.note?.title || 'Untitled'}</strong>?
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setDeleteDialog({ open: false, note: null })} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={2500}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
