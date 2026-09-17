@@ -27,13 +27,14 @@ const STORAGE_KEY = 'unitaser_notifications';
 
 const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
   const theme = useTheme();
-  
+
   const [notifications, setNotifications] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Load notifications from localStorage on mount
   useEffect(() => {
     const savedNotifications = localStorage.getItem(STORAGE_KEY);
-    
+
     if (savedNotifications) {
       try {
         const parsed = JSON.parse(savedNotifications);
@@ -46,18 +47,20 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
         console.error('Failed to parse notifications:', e);
       }
     }
-    
+
     setNotifications([]);
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     setIsInitialized(true);
   }, []);
 
+  // Persist to localStorage whenever notifications change
   useEffect(() => {
     if (isInitialized) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
     }
   }, [notifications, isInitialized]);
 
+  // Notify parent of unread count changes
   useEffect(() => {
     if (isInitialized) {
       const unreadCount = notifications.filter(n => !n.read).length;
@@ -66,6 +69,25 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
       }
     }
   }, [notifications, onUnreadCountChange, isInitialized]);
+
+  // Listen for live updates from the reminder service
+  useEffect(() => {
+    const handleUpdate = () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setNotifications(parsed);
+          }
+        } catch (e) {
+          console.error('Failed to parse live notification update:', e);
+        }
+      }
+    };
+    window.addEventListener('notificationsUpdated', handleUpdate);
+    return () => window.removeEventListener('notificationsUpdated', handleUpdate);
+  }, []);
 
   const getIcon = (type) => {
     switch (type) {
@@ -84,7 +106,7 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
     const date = new Date(timeString);
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 60000) return 'Just now';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
@@ -171,13 +193,13 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
               Clear all
             </Button>
           )}
-          <IconButton size="small" onClick={onClose}>
+          <IconButton size="small" onClick={onClose} aria-label="Close notifications">
             <CloseIcon />
           </IconButton>
         </Box>
       </Box>
 
-      {/* Notification List */}
+      {/* Notification list */}
       {notifications.length === 0 ? (
         <Box
           sx={{

@@ -78,6 +78,14 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
 
   const handleSubmit = () => {
     if (!validate()) return;
+
+    // Warn if reminder is already in the past
+    if (formData.reminder && formData.reminder.getTime() < Date.now()) {
+      if (!window.confirm("This reminder time is in the past — it won't fire. Save anyway?")) {
+        return;
+      }
+    }
+
     onSave({
       title: formData.title.trim(),
       description: formData.description.trim(),
