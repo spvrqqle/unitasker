@@ -33,7 +33,6 @@ const COLORS = [
 const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  
   const isEditing = !!event;
 
   const [formData, setFormData] = useState({
@@ -43,7 +42,6 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
     time: '',
     color: '#0d6efd',
   });
-
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -69,47 +67,34 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
     setErrors({});
   }, [event, open, selectedDate]);
 
-  const handleChange = (field) => (event) => {
-    const value = event.target.value;
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+  const handleChange = (field) => (e) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   const handleColorSelect = (colorValue) => {
     setFormData(prev => ({ ...prev, color: colorValue }));
   };
 
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-    if (!formData.date) {
-      newErrors.date = 'Date is required';
-    }
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.date) newErrors.date = 'Date is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = () => {
-    if (!validateForm()) return;
-
+    if (!validate()) return;
     let dateTime = formData.date;
-    if (formData.time) {
-      dateTime = `${formData.date}T${formData.time}`;
-    }
-
-    const dataToSave = {
+    if (formData.time) dateTime = `${formData.date}T${formData.time}`;
+    onSave({
       title: formData.title.trim(),
       description: formData.description.trim(),
       date: dateTime,
       time: formData.time,
       color: formData.color,
-    };
-
-    onSave(dataToSave);
+    });
   };
 
   const selectedColorLabel = COLORS.find(c => c.value === formData.color)?.label || 'Custom';
@@ -124,14 +109,13 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>{isEditing ? 'Edit Event' : 'Create New Event'}</span>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" aria-label="Close dialog">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <DialogContent dividers>
         <Stack spacing={3} sx={{ mt: 1 }}>
-          {/* Title */}
           <TextField
             label="Event Title *"
             value={formData.title}
@@ -144,7 +128,6 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          {/* Description */}
           <TextField
             label="Description"
             value={formData.description}
@@ -156,7 +139,6 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          {/* Date */}
           <TextField
             label="Date *"
             type="date"
@@ -168,7 +150,6 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          {/* Time */}
           <TextField
             label="Time"
             type="time"
@@ -178,16 +159,10 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
-          {/* Color picker */}
           <Box>
             <Typography
               variant="caption"
-              sx={{
-                display: 'block',
-                mb: 1,
-                color: 'text.secondary',
-                fontWeight: 500,
-              }}
+              sx={{ display: 'block', mb: 1, color: 'text.secondary', fontWeight: 500 }}
             >
               Color
             </Typography>
@@ -198,6 +173,16 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
                   <Tooltip key={color.value} title={color.label} arrow>
                     <Box
                       onClick={() => handleColorSelect(color.value)}
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-label={color.label}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleColorSelect(color.value);
+                        }
+                      }}
                       sx={{
                         width: 36,
                         height: 36,
@@ -210,14 +195,14 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
                         border: isSelected
                           ? `3px solid ${theme.palette.text.primary}`
                           : '2px solid transparent',
-                        outline: isSelected
-                          ? `2px solid ${theme.palette.background.paper}`
-                          : 'none',
-                        outlineOffset: '-4px',
-                        transition: 'all 0.15s',
+                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                         '&:hover': {
-                          transform: 'scale(1.1)',
-                          boxShadow: theme.shadows[3],
+                          transform: 'scale(1.08)',
+                          boxShadow: theme.shadows[2],
+                        },
+                        '&:focus-visible': {
+                          outline: `2px solid ${theme.palette.primary.main}`,
+                          outlineOffset: 3,
                         },
                       }}
                     >
@@ -226,7 +211,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
                           sx={{
                             fontSize: 20,
                             color: '#fff',
-                            filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))',
+                            filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.6))',
                           }}
                         />
                       )}
@@ -235,15 +220,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
                 );
               })}
             </Stack>
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                mt: 1,
-                color: 'text.secondary',
-                fontSize: '0.7rem',
-              }}
-            >
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary', fontSize: '0.7rem' }}>
               Selected: <strong>{selectedColorLabel}</strong>
             </Typography>
           </Box>
@@ -254,11 +231,7 @@ const EventForm = ({ open, onClose, onSave, event = null, selectedDate = null })
         <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="primary"
-        >
+        <Button onClick={handleSubmit} variant="contained">
           {isEditing ? 'Update Event' : 'Create Event'}
         </Button>
       </DialogActions>

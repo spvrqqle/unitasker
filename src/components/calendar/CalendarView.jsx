@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Paper,
@@ -7,13 +7,18 @@ import {
   Button,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   ListItemIcon,
   Divider,
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
+  Snackbar,
+  Alert,
+  Tooltip,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -35,8 +40,6 @@ const CalendarView = () => {
 
   const {
     events,
-    loading,
-    error,
     addEvent,
     editEvent,
     removeEvent,
@@ -50,10 +53,19 @@ const CalendarView = () => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [formDate, setFormDate] = useState(null);
 
-  // Popup state
+  // Popup
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupDate, setPopupDate] = useState(null);
   const [popupEvents, setPopupEvents] = useState([]);
+
+  // Delete confirmation
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, event: null });
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   // ---------- Helpers ----------
   const monthNames = [
@@ -76,7 +88,7 @@ const CalendarView = () => {
   const getEventsForDay = (date) => {
     const key = formatDateKey(date);
     return events
-      .filter(event => formatDateKey(new Date(event.date)) === key)
+      .filter(e => formatDateKey(new Date(e.date)) === key)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
@@ -99,13 +111,9 @@ const CalendarView = () => {
   // ---------- Navigation ----------
   const handleNavigate = (direction) => {
     const newDate = new Date(currentDate);
-    if (viewMode === 'month') {
-      newDate.setMonth(newDate.getMonth() + direction);
-    } else if (viewMode === 'week') {
-      newDate.setDate(newDate.getDate() + (direction * 7));
-    } else {
-      newDate.setDate(newDate.getDate() + direction);
-    }
+    if (viewMode === 'month') newDate.setMonth(newDate.getMonth() + direction);
+    else if (viewMode === 'week') newDate.setDate(newDate.getDate() + direction * 7);
+    else newDate.setDate(newDate.getDate() + direction);
     setCurrentDate(newDate);
     setSelectedDate(newDate);
   };
@@ -116,9 +124,7 @@ const CalendarView = () => {
     setSelectedDate(today);
   };
 
-  const handleViewChange = (mode) => {
-    setViewMode(mode);
-  };
+  const handleViewChange = (mode) => setViewMode(mode);
 
   const handleDateClick = (date) => {
     setSelectedDate(date);
@@ -146,26 +152,24 @@ const CalendarView = () => {
     handleClosePopup();
   };
 
-  // ---------- Header Title ----------
+  // ---------- Header title ----------
   const getHeaderTitle = () => {
-    if (viewMode === 'month') {
-      return `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-    }
+    if (viewMode === 'month') return `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     if (viewMode === 'week') {
       const start = getStartOfWeek(currentDate);
       const end = new Date(start);
       end.setDate(end.getDate() + 6);
-      const startMonth = monthNames[start.getMonth()].slice(0, 3);
-      const endMonth = monthNames[end.getMonth()].slice(0, 3);
+      const sm = monthNames[start.getMonth()].slice(0, 3);
+      const em = monthNames[end.getMonth()].slice(0, 3);
       if (start.getMonth() === end.getMonth()) {
-        return `${startMonth} ${start.getDate()} – ${end.getDate()}, ${start.getFullYear()}`;
+        return `${sm} ${start.getDate()} – ${end.getDate()}, ${start.getFullYear()}`;
       }
-      return `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}, ${start.getFullYear()}`;
+      return `${sm} ${start.getDate()} – ${em} ${end.getDate()}, ${start.getFullYear()}`;
     }
     return `${dayNames[currentDate.getDay()]}, ${monthNames[currentDate.getMonth()]} ${currentDate.getDate()}, ${currentDate.getFullYear()}`;
   };
 
-  // ---------- Event CRUD ----------
+  // ---------- CRUD ----------
   const handleAddEvent = (date) => {
     setEditingEvent(null);
     setFormDate(date || selectedDate || new Date());
@@ -180,23 +184,26 @@ const CalendarView = () => {
     if (popupOpen) handleClosePopup();
   };
 
-  const handleDeleteEvent = async (id) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      try {
-        await removeEvent(id);
-        await refreshEvents();
-        if (popupDate) {
-          const updatedEvents = events.filter(
-            e => e.id !== id && formatDateKey(new Date(e.date)) === formatDateKey(popupDate)
-          );
-          setPopupEvents(updatedEvents);
-          if (updatedEvents.length === 0) {
-            handleClosePopup();
-          }
-        }
-      } catch (err) {
-        console.error('Failed to delete event:', err);
+  const handleDeleteClick = (id) => {
+    const event = events.find(e => e.id === id);
+    setDeleteDialog({ open: true, event });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await removeEvent(deleteDialog.event.id);
+      await refreshEvents();
+      showSnackbar('Event deleted', 'success');
+
+      if (popupDate) {
+        const updated = popupEvents.filter(e => e.id !== deleteDialog.event.id);
+        setPopupEvents(updated);
+        if (updated.length === 0) handleClosePopup();
       }
+    } catch (err) {
+      showSnackbar('Failed to delete event', 'error');
+    } finally {
+      setDeleteDialog({ open: false, event: null });
     }
   };
 
@@ -204,15 +211,17 @@ const CalendarView = () => {
     try {
       if (editingEvent) {
         await editEvent(editingEvent.id, eventData);
+        showSnackbar('Event updated', 'success');
       } else {
         await addEvent(eventData);
+        showSnackbar('Event created', 'success');
       }
       setFormOpen(false);
       setEditingEvent(null);
       setFormDate(null);
       refreshEvents();
     } catch (err) {
-      console.error('Failed to save event:', err);
+      showSnackbar('Failed to save event', 'error');
     }
   };
 
@@ -222,7 +231,7 @@ const CalendarView = () => {
     setFormDate(null);
   };
 
-  // ---------- Month View ----------
+  // ---------- Month view ----------
   const renderMonthView = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -231,12 +240,8 @@ const CalendarView = () => {
     const numWeeks = Math.ceil((firstDay + daysInMonth) / 7);
 
     const cells = [];
-    for (let i = 0; i < firstDay; i++) {
-      cells.push({ type: 'empty', key: `empty-${i}` });
-    }
-    for (let day = 1; day <= daysInMonth; day++) {
-      cells.push({ type: 'day', day, key: `day-${day}` });
-    }
+    for (let i = 0; i < firstDay; i++) cells.push({ type: 'empty', key: `empty-${i}` });
+    for (let day = 1; day <= daysInMonth; day++) cells.push({ type: 'day', day, key: `day-${day}` });
 
     return (
       <Box sx={{
@@ -272,21 +277,27 @@ const CalendarView = () => {
           minHeight: 0,
         }}>
           {cells.map((cell) => {
-            if (cell.type === 'empty') {
-              return <Box key={cell.key} />;
-            }
+            if (cell.type === 'empty') return <Box key={cell.key} />;
 
             const day = cell.day;
             const cellDate = new Date(year, month, day);
             const dayEvents = getEventsForDay(cellDate);
             const cellIsToday = isToday(cellDate);
             const cellIsSelected = isSameDay(cellDate, selectedDate);
-            const hasEvents = dayEvents.length > 0;
 
             return (
               <Box
                 key={cell.key}
                 onClick={() => handleDateClick(cellDate)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleDateClick(cellDate);
+                  }
+                }}
+                aria-label={`${day} ${monthNames[month]}, ${dayEvents.length} events`}
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -301,18 +312,19 @@ const CalendarView = () => {
                       ? 'action.selected'
                       : 'transparent',
                   color: cellIsSelected ? 'white' : 'text.primary',
-                  border: `1px solid ${
-                    cellIsSelected
-                      ? 'transparent'
-                      : cellIsToday
-                        ? 'primary.main'
-                        : theme.palette.divider
-                  }`,
-                  transition: 'all 0.15s',
+                  border: `1px solid ${cellIsSelected
+                    ? 'transparent'
+                    : cellIsToday
+                      ? 'primary.main'
+                      : theme.palette.divider}`,
+                  transition: 'background-color 0.15s ease, border-color 0.15s ease',
                   overflow: 'hidden',
                   '&:hover': {
                     bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
-                    transform: 'scale(1.02)',
+                  },
+                  '&:focus-visible': {
+                    outline: `2px solid ${theme.palette.primary.main}`,
+                    outlineOffset: 2,
                   },
                 }}
               >
@@ -327,7 +339,7 @@ const CalendarView = () => {
                   {day}
                 </Typography>
 
-                {hasEvents && (
+                {dayEvents.length > 0 && (
                   <Box sx={{
                     display: 'flex',
                     flexWrap: 'wrap',
@@ -369,7 +381,7 @@ const CalendarView = () => {
     );
   };
 
-  // ---------- Week View ----------
+  // ---------- Week view ----------
   const renderWeekView = () => {
     const startOfWeek = getStartOfWeek(currentDate);
     const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -379,13 +391,7 @@ const CalendarView = () => {
     });
 
     return (
-      <Box sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        flex: 1,
-        minHeight: 0,
-      }}>
-        {/* Weekday headers row */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <Box sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
@@ -401,6 +407,15 @@ const CalendarView = () => {
               <Box
                 key={index}
                 onClick={() => handleDateClick(date)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleDateClick(date);
+                  }
+                }}
+                aria-label={`${dayNames[index]} ${date.getDate()}`}
                 sx={{
                   textAlign: 'center',
                   py: 0.75,
@@ -409,9 +424,13 @@ const CalendarView = () => {
                   borderRadius: 1,
                   bgcolor: cellIsSelected ? 'primary.main' : 'transparent',
                   color: cellIsSelected ? 'white' : 'text.primary',
-                  transition: 'all 0.15s',
+                  transition: 'background-color 0.15s ease',
                   '&:hover': {
                     bgcolor: cellIsSelected ? 'primary.dark' : 'action.hover',
+                  },
+                  '&:focus-visible': {
+                    outline: `2px solid ${theme.palette.primary.main}`,
+                    outlineOffset: 2,
                   },
                 }}
               >
@@ -435,11 +454,7 @@ const CalendarView = () => {
                     fontSize: '1rem',
                     lineHeight: 1.2,
                     mt: 0.25,
-                    color: cellIsSelected
-                      ? 'white'
-                      : cellIsToday
-                        ? 'primary.main'
-                        : 'text.primary',
+                    color: cellIsSelected ? 'white' : cellIsToday ? 'primary.main' : 'text.primary',
                   }}
                 >
                   {date.getDate()}
@@ -449,7 +464,6 @@ const CalendarView = () => {
           })}
         </Box>
 
-        {/* Events area */}
         <Box sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
@@ -478,19 +492,13 @@ const CalendarView = () => {
                     : cellIsToday
                       ? 'action.hover'
                       : 'transparent',
-                  border: `1px solid ${
-                    cellIsSelected
-                      ? 'primary.main'
-                      : theme.palette.divider
-                  }`,
+                  border: `1px solid ${cellIsSelected ? 'primary.main' : theme.palette.divider}`,
                   overflow: 'auto',
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                  },
+                  '&:hover': { bgcolor: 'action.hover' },
                   '&::-webkit-scrollbar': { width: '4px' },
                   '&::-webkit-scrollbar-thumb': {
                     background: theme.palette.divider,
-                    borderRadius: '2px'
+                    borderRadius: '2px',
                   },
                 }}
               >
@@ -513,8 +521,6 @@ const CalendarView = () => {
                       sx={{
                         bgcolor: event.color || '#0d6efd',
                         color: 'white',
-                        fontSize: '0.7rem',
-                        fontWeight: 500,
                         px: 0.75,
                         py: 0.5,
                         borderRadius: 0.75,
@@ -523,13 +529,7 @@ const CalendarView = () => {
                     >
                       <Typography
                         variant="caption"
-                        sx={{
-                          display: 'block',
-                          fontSize: '0.6rem',
-                          opacity: 0.85,
-                          lineHeight: 1,
-                          mb: 0.2,
-                        }}
+                        sx={{ display: 'block', fontSize: '0.6rem', opacity: 0.85, lineHeight: 1, mb: 0.2 }}
                       >
                         {event.time ? formatTime(event.date) : 'All day'}
                       </Typography>
@@ -558,18 +558,12 @@ const CalendarView = () => {
     );
   };
 
-  // ---------- Day View ----------
+  // ---------- Day view ----------
   const renderDayView = () => {
     const dayEvents = getEventsForDay(selectedDate);
 
     return (
-      <Box sx={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        overflow: 'hidden',
-      }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         <Box sx={{
           mb: 1.5,
           flexShrink: 0,
@@ -592,6 +586,7 @@ const CalendarView = () => {
             variant="contained"
             startIcon={<AddIcon sx={{ fontSize: 16 }} />}
             onClick={() => handleAddEvent(selectedDate)}
+            aria-label="Add event to this day"
             sx={{ fontSize: '0.7rem', py: 0.5 }}
           >
             Add Event
@@ -617,16 +612,18 @@ const CalendarView = () => {
         ) : (
           <List
             dense
+            disablePadding
             sx={{
               py: 0,
               flex: 1,
+              minHeight: 0,
               overflow: 'auto',
               border: `1px solid ${theme.palette.divider}`,
               borderRadius: 2,
               '&::-webkit-scrollbar': { width: '4px' },
               '&::-webkit-scrollbar-thumb': {
                 background: theme.palette.divider,
-                borderRadius: '2px'
+                borderRadius: '2px',
               },
             }}
           >
@@ -634,66 +631,79 @@ const CalendarView = () => {
               <React.Fragment key={event.id}>
                 {index > 0 && <Divider sx={{ opacity: 0.5 }} />}
                 <ListItem
-                  sx={{
-                    py: 1,
-                    px: 2,
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
+                  disablePadding
+                  secondaryAction={
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Edit event" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditEvent(event)}
+                          aria-label={`Edit ${event.title}`}
+                          sx={{ p: 0.5 }}
+                        >
+                          <EditIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete event" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteClick(event.id)}
+                          aria-label={`Delete ${event.title}`}
+                          color="error"
+                          sx={{ p: 0.5 }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  }
                 >
-                  <ListItemIcon sx={{ minWidth: 28 }}>
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        bgcolor: event.color || '#0d6efd',
-                      }}
+                  <ListItemButton
+                    onClick={() => handleEditEvent(event)}
+                    sx={{ py: 1, pr: 10 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          bgcolor: event.color || '#0d6efd',
+                        }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                          {event.title}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          {event.description && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              component="div"
+                              sx={{ fontSize: '0.7rem' }}
+                            >
+                              {event.description}
+                            </Typography>
+                          )}
+                          {event.time && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              component="div"
+                              sx={{ display: 'block', mt: 0.2, fontSize: '0.7rem' }}
+                            >
+                              🕐 {formatTime(event.date)}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
                     />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
-                        {event.title}
-                      </Typography>
-                    }
-                    secondary={
-                      <Box>
-                        {event.description && (
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                            {event.description}
-                          </Typography>
-                        )}
-                        {event.time && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: 'block', mt: 0.2, fontSize: '0.7rem' }}
-                          >
-                            🕐 {formatTime(event.date)}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                    slotProps={{
-                      secondary: { component: 'div' },
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEditEvent(event)}
-                      sx={{ color: 'text.secondary', p: 0.5 }}
-                    >
-                      <EditIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteEvent(event.id)}
-                      sx={{ color: 'text.secondary', p: 0.5 }}
-                    >
-                      <DeleteIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Box>
+                  </ListItemButton>
                 </ListItem>
               </React.Fragment>
             ))}
@@ -712,7 +722,7 @@ const CalendarView = () => {
       gap: 2,
       overflow: 'hidden',
     }}>
-      {/* Navigation Header with Title and Tabs */}
+      {/* Header */}
       <Box sx={{ flexShrink: 0 }}>
         <Box sx={{
           display: 'flex',
@@ -723,21 +733,20 @@ const CalendarView = () => {
           gap: 1,
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton onClick={() => handleNavigate(-1)} size="small">
-              <ChevronLeftIcon />
-            </IconButton>
+            <Tooltip title="Previous" arrow>
+              <IconButton onClick={() => handleNavigate(-1)} size="small" aria-label="Previous">
+                <ChevronLeftIcon />
+              </IconButton>
+            </Tooltip>
             <Typography variant="h6" sx={{ fontWeight: 600, minWidth: 170, textAlign: 'center' }}>
               {getHeaderTitle()}
             </Typography>
-            <IconButton onClick={() => handleNavigate(1)} size="small">
-              <ChevronRightIcon />
-            </IconButton>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={handleToday}
-              sx={{ ml: 1 }}
-            >
+            <Tooltip title="Next" arrow>
+              <IconButton onClick={() => handleNavigate(1)} size="small" aria-label="Next">
+                <ChevronRightIcon />
+              </IconButton>
+            </Tooltip>
+            <Button size="small" variant="outlined" onClick={handleToday} sx={{ ml: 1 }}>
               Today
             </Button>
           </Box>
@@ -746,16 +755,13 @@ const CalendarView = () => {
             startIcon={<AddIcon />}
             onClick={() => handleAddEvent(null)}
             size="small"
+            aria-label="Create new event"
           >
             New Event
           </Button>
         </Box>
 
-        <Box sx={{
-          display: 'flex',
-          gap: 0.5,
-          mb: 1.5,
-        }}>
+        <Box sx={{ display: 'flex', gap: 0.5, mb: 1.5 }}>
           {['day', 'week', 'month'].map((mode) => (
             <Button
               key={mode}
@@ -775,7 +781,7 @@ const CalendarView = () => {
         </Box>
       </Box>
 
-      {/* Calendar Content */}
+      {/* Content */}
       <Paper sx={{
         flex: 1,
         p: 1.5,
@@ -792,7 +798,7 @@ const CalendarView = () => {
         {viewMode === 'day' && renderDayView()}
       </Paper>
 
-      {/* Day Events Popup */}
+      {/* Day events popup */}
       <Dialog
         open={popupOpen}
         onClose={handleClosePopup}
@@ -813,77 +819,87 @@ const CalendarView = () => {
               {popupEvents.length} {popupEvents.length === 1 ? 'event' : 'events'}
             </Typography>
           </Box>
-          <IconButton onClick={handleClosePopup} size="small">
+          <IconButton onClick={handleClosePopup} size="small" aria-label="Close popup">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
 
         <DialogContent dividers sx={{ p: 0 }}>
-          <List dense sx={{ py: 0 }}>
+          <List dense disablePadding>
             {popupEvents.map((event, index) => (
               <React.Fragment key={event.id}>
                 {index > 0 && <Divider sx={{ opacity: 0.5 }} />}
                 <ListItem
-                  sx={{
-                    py: 1,
-                    px: 2,
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
+                  disablePadding
+                  secondaryAction={
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Edit event" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditEvent(event)}
+                          aria-label={`Edit ${event.title}`}
+                          sx={{ p: 0.5 }}
+                        >
+                          <EditIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete event" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteClick(event.id)}
+                          aria-label={`Delete ${event.title}`}
+                          color="error"
+                          sx={{ p: 0.5 }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  }
                 >
-                  <ListItemIcon sx={{ minWidth: 24 }}>
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        bgcolor: event.color || '#0d6efd',
-                      }}
+                  <ListItemButton onClick={() => handleEditEvent(event)} sx={{ py: 1, pr: 10 }}>
+                    <ListItemIcon sx={{ minWidth: 24 }}>
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          bgcolor: event.color || '#0d6efd',
+                        }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                          {event.title}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          {event.description && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              component="div"
+                              sx={{ fontSize: '0.7rem' }}
+                            >
+                              {event.description}
+                            </Typography>
+                          )}
+                          {event.time && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              component="div"
+                              sx={{ display: 'block', mt: 0.2, fontSize: '0.7rem' }}
+                            >
+                              🕐 {formatTime(event.date)}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
                     />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
-                        {event.title}
-                      </Typography>
-                    }
-                    secondary={
-                      <Box>
-                        {event.description && (
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                            {event.description}
-                          </Typography>
-                        )}
-                        {event.time && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: 'block', mt: 0.2, fontSize: '0.7rem' }}
-                          >
-                            🕐 {formatTime(event.date)}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                    slotProps={{
-                      secondary: { component: 'div' },
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEditEvent(event)}
-                      sx={{ color: 'text.secondary', p: 0.5 }}
-                    >
-                      <EditIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteEvent(event.id)}
-                      sx={{ color: 'text.secondary', p: 0.5 }}
-                    >
-                      <DeleteIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Box>
+                  </ListItemButton>
                 </ListItem>
               </React.Fragment>
             ))}
@@ -911,7 +927,31 @@ const CalendarView = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Event Form Dialog */}
+      {/* Delete confirmation */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, event: null })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete Event?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete <strong>{deleteDialog.event?.title}</strong>?
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setDeleteDialog({ open: false, event: null })} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Event form */}
       <EventForm
         open={formOpen}
         onClose={handleCloseForm}
@@ -919,6 +959,22 @@ const CalendarView = () => {
         event={editingEvent}
         selectedDate={formDate}
       />
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={2500}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
