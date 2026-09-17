@@ -9,6 +9,7 @@ import {
   Drawer,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   Divider,
@@ -35,7 +36,7 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  
+
   const [currentTab, setCurrentTab] = useState(propCurrentTab);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -50,17 +51,14 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
     { label: 'Settings', icon: <SettingsIcon />, value: 6 },
   ];
 
-  // Update internal state when prop changes
   useEffect(() => {
     setCurrentTab(propCurrentTab);
   }, [propCurrentTab]);
 
-  // Listen for navigation updates from App
   useEffect(() => {
     const handleUpdateTab = (event) => {
       setCurrentTab(event.detail);
     };
-
     window.addEventListener('updateNavigationTab', handleUpdateTab);
     return () => {
       window.removeEventListener('updateNavigationTab', handleUpdateTab);
@@ -70,23 +68,21 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
   const handleNavigation = (event, newValue) => {
     setCurrentTab(newValue);
     window.dispatchEvent(new CustomEvent('navigationChange', { detail: newValue }));
-    console.log('Navigating to:', navItems[newValue].label);
   };
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  // Mobile: Bottom Navigation
+  // Mobile
   if (isMobile) {
     return (
       <>
-        {/* Top app bar for mobile */}
-        <Paper 
-          sx={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
+        <Paper
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
             right: 0,
             zIndex: theme.zIndex.appBar,
             display: 'flex',
@@ -96,37 +92,27 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
             px: 2,
             borderRadius: 0,
             borderBottom: `1px solid ${theme.palette.divider}`
-          }} 
+          }}
           elevation={2}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar 
-              src="/favicon.png" 
-              alt="UniTasker"
-              sx={{ width: 32, height: 32 }}
-            />
-            <Typography variant="h6" color="primary">
-              UniTasker
-            </Typography>
+            <Avatar src="/favicon.png" alt="UniTasker" sx={{ width: 32, height: 32 }} />
+            <Typography variant="h6" color="primary">UniTasker</Typography>
           </Box>
-          <IconButton 
-            onClick={() => setDrawerOpen(true)} 
-            aria-label="Open menu"
-          >
+          <IconButton onClick={() => setDrawerOpen(true)} aria-label="Open menu">
             <MenuIcon />
           </IconButton>
         </Paper>
 
-        {/* Bottom Navigation */}
-        <Paper 
-          sx={{ 
-            position: 'fixed', 
-            bottom: 0, 
-            left: 0, 
+        <Paper
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
             right: 0,
             zIndex: theme.zIndex.appBar,
             borderTop: `1px solid ${theme.palette.divider}`
-          }} 
+          }}
           elevation={3}
         >
           <BottomNavigation
@@ -136,16 +122,14 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
             showLabels
           >
             {navItems.slice(0, 5).map((item) => (
-              <BottomNavigationAction 
+              <BottomNavigationAction
                 key={item.value}
-                label={item.label} 
+                label={item.label}
                 icon={item.icon}
-                sx={{ 
+                sx={{
                   minWidth: 'auto',
                   padding: '6px 4px',
-                  '& .MuiBottomNavigationAction-label': {
-                    fontSize: '10px'
-                  },
+                  '& .MuiBottomNavigationAction-label': { fontSize: '10px' },
                   '&.Mui-selected': {
                     color: theme.palette.primary.main,
                     '& .MuiBottomNavigationAction-label': {
@@ -156,48 +140,35 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
                 }}
               />
             ))}
-            <BottomNavigationAction 
-              label="More" 
+            <BottomNavigationAction
+              label="More"
               icon={<MenuIcon />}
               onClick={() => setDrawerOpen(true)}
-              sx={{ 
+              sx={{
                 minWidth: 'auto',
                 padding: '6px 4px',
-                '& .MuiBottomNavigationAction-label': {
-                  fontSize: '10px'
-                }
+                '& .MuiBottomNavigationAction-label': { fontSize: '10px' }
               }}
             />
           </BottomNavigation>
         </Paper>
-        
-        {/* More options drawer for mobile */}
-        <Drawer
-          anchor="bottom"
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-        >
+
+        <Drawer anchor="bottom" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <Box sx={{ p: 2 }}>
             <List>
               {navItems.slice(5).map((item) => (
-                <ListItem 
-                  button 
+                <ListItemButton
                   key={item.value}
                   onClick={() => {
                     setCurrentTab(item.value);
                     setDrawerOpen(false);
                     window.dispatchEvent(new CustomEvent('navigationChange', { detail: item.value }));
                   }}
-                  sx={{
-                    '&.Mui-selected': {
-                      backgroundColor: 'rgba(13, 110, 253, 0.08)',
-                    }
-                  }}
                   selected={currentTab === item.value}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.label} />
-                </ListItem>
+                </ListItemButton>
               ))}
             </List>
           </Box>
@@ -206,7 +177,7 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
     );
   }
 
-  // Tablet & Desktop: Sidebar
+  // Sidebar
   const isCollapsed = isTablet ? true : sidebarCollapsed;
   const sidebarWidth = isCollapsed ? 72 : (isDesktop ? 240 : 200);
 
@@ -231,97 +202,93 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
         },
       }}
     >
-      {/* Header with logo */}
-      <Toolbar sx={{ 
-        justifyContent: isCollapsed ? 'center' : 'flex-start',
-        minHeight: 64,
-        px: 1
-      }}>
+      <Toolbar
+        sx={{
+          justifyContent: isCollapsed ? 'center' : 'flex-start',
+          minHeight: 64,
+          px: 1
+        }}
+      >
         {!isCollapsed ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar 
-              src="/favicon.png" 
-              alt="UniTasker"
-              sx={{ width: 36, height: 36 }}
-            />
+            <Avatar src="/favicon.png" alt="UniTasker" sx={{ width: 36, height: 36 }} />
             <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
               UniTasker
             </Typography>
           </Box>
         ) : (
-          <Avatar 
-            src="/favicon.png" 
-            alt="UniTasker"
-            sx={{ width: 36, height: 36 }}
-          />
+          <Avatar src="/favicon.png" alt="UniTasker" sx={{ width: 36, height: 36 }} />
         )}
       </Toolbar>
-      
+
       <Divider />
 
-      {/* Navigation Items - Scrollable area */}
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
         <List>
-          {navItems.map((item) => (
-            <ListItem 
-              button 
-              key={item.value}
-              selected={currentTab === item.value}
-              onClick={() => {
-                setCurrentTab(item.value);
-                window.dispatchEvent(new CustomEvent('navigationChange', { detail: item.value }));
-              }}
-              sx={{
-                minHeight: 48,
-                justifyContent: isCollapsed ? 'center' : 'initial',
-                px: 2.5,
-                '&.Mui-selected': {
-                  backgroundColor: 'rgba(13, 110, 253, 0.12)',
-                  borderRight: `3px solid ${theme.palette.primary.main}`,
+          {navItems.map((item) => {
+            const selected = currentTab === item.value;
+            return (
+              <ListItemButton
+                key={item.value}
+                selected={selected}
+                onClick={() => {
+                  setCurrentTab(item.value);
+                  window.dispatchEvent(new CustomEvent('navigationChange', { detail: item.value }));
+                }}
+                sx={{
+                  minHeight: 48,
+                  justifyContent: isCollapsed ? 'center' : 'initial',
+                  px: 2.5,
+                  '&.Mui-selected': {
+                    backgroundColor: 'rgba(13, 110, 253, 0.12)',
+                    borderRight: `3px solid ${theme.palette.primary.main}`,
+                    '&:hover': {
+                      backgroundColor: 'rgba(13, 110, 253, 0.18)',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: theme.palette.primary.main,
+                    },
+                    '& .MuiListItemText-primary': {
+                      color: theme.palette.primary.main,
+                      fontWeight: 600,
+                    }
+                  },
                   '&:hover': {
-                    backgroundColor: 'rgba(13, 110, 253, 0.18)',
-                  },
-                  '& .MuiListItemIcon-root': {
-                    color: theme.palette.primary.main,
-                  },
-                  '& .MuiListItemText-primary': {
-                    color: theme.palette.primary.main,
-                    fontWeight: 600,
+                    backgroundColor: 'rgba(13, 110, 253, 0.04)',
                   }
-                },
-                '&:hover': {
-                  backgroundColor: 'rgba(13, 110, 253, 0.04)',
-                }
-              }}
-            >
-              <ListItemIcon sx={{ 
-                minWidth: 0,
-                justifyContent: 'center',
-                mr: isCollapsed ? 0 : 2,
-                color: currentTab === item.value ? theme.palette.primary.main : 'inherit'
-              }}>
-                {item.icon}
-              </ListItemIcon>
-              {!isCollapsed && (
-                <ListItemText 
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontWeight: currentTab === item.value ? 600 : 400,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    justifyContent: 'center',
+                    mr: isCollapsed ? 0 : 2,
+                    color: selected ? theme.palette.primary.main : 'inherit'
                   }}
-                />
-              )}
-            </ListItem>
-          ))}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                {!isCollapsed && (
+                  <ListItemText
+                    primary={item.label}
+                    slotProps={{
+                      primary: {
+                        fontWeight: selected ? 600 : 400,
+                      },
+                    }}
+                  />
+                )}
+              </ListItemButton>
+            );
+          })}
         </List>
       </Box>
 
       <Divider />
 
-      {/* Bottom section with collapse button - only show on desktop */}
-      <Box sx={{ p: 1 }}>
-        {isDesktop && (
-          <ListItem 
-            button 
+      {isDesktop && (
+        <Box sx={{ p: 1 }}>
+          <ListItemButton
             onClick={toggleSidebar}
             sx={{
               minHeight: 48,
@@ -333,19 +300,19 @@ const Navigation = ({ currentTab: propCurrentTab = 0 }) => {
               }
             }}
           >
-            <ListItemIcon sx={{ 
-              minWidth: 0,
-              justifyContent: 'center',
-              mr: isCollapsed ? 0 : 2
-            }}>
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                justifyContent: 'center',
+                mr: isCollapsed ? 0 : 2
+              }}
+            >
               {sidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
             </ListItemIcon>
-            {!isCollapsed && (
-              <ListItemText primary="Collapse" />
-            )}
-          </ListItem>
-        )}
-      </Box>
+            {!isCollapsed && <ListItemText primary="Collapse" />}
+          </ListItemButton>
+        </Box>
+      )}
     </Drawer>
   );
 };

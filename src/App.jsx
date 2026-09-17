@@ -16,6 +16,7 @@ import ResourceManager from './components/resources/ResourceManager';
 import TimerView from './components/timer/TimerView';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import Settings from './components/settings/Settings';
 
 const AppContent = () => {
   const { theme } = useTheme();
@@ -95,7 +96,7 @@ const AppContent = () => {
       case 5:
         return <TimerView />;
       case 6:
-        return <Box sx={{ p: 3 }}><Typography>Settings View (Coming Soon)</Typography></Box>;
+        return <Settings />;
       default:
         return <Dashboard />;
     }

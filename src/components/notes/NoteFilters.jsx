@@ -14,11 +14,11 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 
-const NoteFilters = ({ 
-  filters, 
-  onFilterChange, 
-  onClearFilters, 
-  availableTags = [] 
+const NoteFilters = ({
+  filters,
+  onFilterChange,
+  onClearFilters,
+  availableTags = [],
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -39,42 +39,46 @@ const NoteFilters = ({
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 2,
-        flexDirection: isMobile ? 'column' : 'row',
-        alignItems: 'center',
-      }}>
-        {/* Search - takes more space */}
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: 'center',
+        }}
+      >
+        {/* Search */}
         <TextField
           placeholder="Search notes by title, content, or tags..."
           value={filters.searchTerm || ''}
           onChange={handleSearchChange}
           size="small"
           sx={{ flex: 3 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: filters.searchTerm && (
-              <InputAdornment position="end">
-                <ClearIcon 
-                  sx={{ cursor: 'pointer' }} 
-                  onClick={handleClearSearch}
-                />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: filters.searchTerm ? (
+                <InputAdornment position="end">
+                  <ClearIcon
+                    fontSize="small"
+                    sx={{ cursor: 'pointer' }}
+                    onClick={handleClearSearch}
+                  />
+                </InputAdornment>
+              ) : null,
+            },
           }}
         />
 
-        {/* Tag Filter - takes less space */}
+        {/* Tag Filter */}
         <FormControl size="small" sx={{ flex: 1, minWidth: 150 }}>
-          <InputLabel id="tag-filter-label">Filter by Tag</InputLabel>
+          <InputLabel id="note-tag-filter-label">Filter by Tag</InputLabel>
           <Select
-            labelId="tag-filter-label"
-            id="tag-filter-select"
+            labelId="note-tag-filter-label"
             value={filters.selectedTag || ''}
             onChange={handleTagFilterChange}
             label="Filter by Tag"
@@ -89,7 +93,6 @@ const NoteFilters = ({
         </FormControl>
       </Box>
 
-      {/* Active Filters Display */}
       {hasActiveFilters && (
         <Box sx={{ mt: 2 }}>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
