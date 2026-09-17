@@ -13,6 +13,9 @@ import {
   Typography,
   Divider,
   Box,
+  Dialog as ConfirmDialog,
+  DialogContentText,
+  Tooltip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -27,6 +30,7 @@ const TimerSettingsDialog = ({ open, onClose }) => {
 
   const [form, setForm] = useState(settings);
   const [errors, setErrors] = useState({});
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -36,8 +40,7 @@ const TimerSettingsDialog = ({ open, onClose }) => {
   }, [open, settings]);
 
   const handleChange = (field) => (e) => {
-    const raw = e.target.value;
-    setForm(prev => ({ ...prev, [field]: raw }));
+    setForm(prev => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
@@ -66,112 +69,147 @@ const TimerSettingsDialog = ({ open, onClose }) => {
     onClose();
   };
 
-  const handleReset = () => {
+  const handleResetConfirm = () => {
     resetSettings();
+    setResetConfirmOpen(false);
     onClose();
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullScreen={fullScreen}
-      fullWidth
-      maxWidth="sm"
-    >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>Timer Settings</span>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullScreen={fullScreen}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Timer Settings</span>
+          <IconButton onClick={onClose} size="small" aria-label="Close dialog">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
 
-      <DialogContent dividers>
-        <Stack spacing={3} sx={{ mt: 1 }}>
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-              Session Durations
-            </Typography>
-            <Stack spacing={2}>
+        <DialogContent dividers>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
+                Session Durations
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  label="Focus duration (minutes)"
+                  type="number"
+                  value={form.focusMinutes}
+                  onChange={handleChange('focusMinutes')}
+                  error={!!errors.focusMinutes}
+                  helperText={errors.focusMinutes || 'How long each focus session lasts'}
+                  fullWidth
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { min: 1, max: 120 },
+                  }}
+                />
+                <TextField
+                  label="Short break (minutes)"
+                  type="number"
+                  value={form.shortBreakMinutes}
+                  onChange={handleChange('shortBreakMinutes')}
+                  error={!!errors.shortBreakMinutes}
+                  helperText={errors.shortBreakMinutes || 'Short break between focus sessions'}
+                  fullWidth
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { min: 1, max: 60 },
+                  }}
+                />
+                <TextField
+                  label="Long break (minutes)"
+                  type="number"
+                  value={form.longBreakMinutes}
+                  onChange={handleChange('longBreakMinutes')}
+                  error={!!errors.longBreakMinutes}
+                  helperText={errors.longBreakMinutes || 'Longer break after a full cycle'}
+                  fullWidth
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    htmlInput: { min: 1, max: 60 },
+                  }}
+                />
+              </Stack>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
+                Cycle
+              </Typography>
               <TextField
-                label="Focus duration (minutes)"
+                label="Focus sessions before long break"
                 type="number"
-                value={form.focusMinutes}
-                onChange={handleChange('focusMinutes')}
-                error={!!errors.focusMinutes}
-                helperText={errors.focusMinutes || 'How long each focus session lasts'}
+                value={form.sessionsBeforeLongBreak}
+                onChange={handleChange('sessionsBeforeLongBreak')}
+                error={!!errors.sessionsBeforeLongBreak}
+                helperText={
+                  errors.sessionsBeforeLongBreak ||
+                  'e.g., 4 = after every 4th focus session, take a long break'
+                }
                 fullWidth
-                slotProps={{ 
+                slotProps={{
                   inputLabel: { shrink: true },
-                  htmlInput: { min: 1, max: 120 },
+                  htmlInput: { min: 1, max: 12 },
                 }}
               />
-              <TextField
-                label="Short break (minutes)"
-                type="number"
-                value={form.shortBreakMinutes}
-                onChange={handleChange('shortBreakMinutes')}
-                error={!!errors.shortBreakMinutes}
-                helperText={errors.shortBreakMinutes || 'Short break between focus sessions'}
-                fullWidth
-                slotProps={{ 
-                  inputLabel: { shrink: true },
-                  htmlInput: { min: 1, max: 60 },
-                }}
-              />
-              <TextField
-                label="Long break (minutes)"
-                type="number"
-                value={form.longBreakMinutes}
-                onChange={handleChange('longBreakMinutes')}
-                error={!!errors.longBreakMinutes}
-                helperText={errors.longBreakMinutes || 'Longer break after a full cycle'}
-                fullWidth
-                slotProps={{ 
-                  inputLabel: { shrink: true },
-                  htmlInput: { min: 1, max: 60 },
-                }}
-              />
-            </Stack>
+            </Box>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, gap: 1, justifyContent: 'space-between' }}>
+          <Tooltip title="Reset all values to defaults" arrow>
+            <Button
+              onClick={() => setResetConfirmOpen(true)}
+              color="inherit"
+              startIcon={<ResetIcon />}
+            >
+              Reset to Defaults
+            </Button>
+          </Tooltip>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button onClick={onClose} color="inherit">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} variant="contained">
+              Save
+            </Button>
           </Box>
+        </DialogActions>
+      </Dialog>
 
-          <Divider />
-
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-              Cycle
-            </Typography>
-            <TextField
-              label="Focus sessions before long break"
-              type="number"
-              value={form.sessionsBeforeLongBreak}
-              onChange={handleChange('sessionsBeforeLongBreak')}
-              error={!!errors.sessionsBeforeLongBreak}
-              helperText={errors.sessionsBeforeLongBreak || 'e.g., 4 = after every 4th focus session, take a long break'}
-              fullWidth
-              slotProps={{ 
-                inputLabel: { shrink: true },
-                htmlInput: { min: 1, max: 12 },
-              }}
-            />
-          </Box>
-        </Stack>
-      </DialogContent>
-
-      <DialogActions sx={{ p: 2, gap: 1, justifyContent: 'space-between' }}>
-        <Button onClick={handleReset} color="inherit" startIcon={<ResetIcon />}>
-          Reset to Defaults
-        </Button>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button onClick={onClose} color="inherit">
+      {/* Reset confirmation */}
+      <Dialog
+        open={resetConfirmOpen}
+        onClose={() => setResetConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Reset Timer Settings?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will reset all timer durations and cycle settings to their default values.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setResetConfirmOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained">
-            Save
+          <Button onClick={handleResetConfirm} color="error" variant="contained">
+            Reset
           </Button>
-        </Box>
-      </DialogActions>
-    </Dialog>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { MODE_META } from '../../hooks/usePomodoro';
 
-const CircularTimer = ({ 
+const CircularTimer = ({
   progress,
   timeLeft,
   mode,
@@ -24,7 +24,12 @@ const CircularTimer = ({
   const modeLabel = MODE_META[mode]?.label || 'Focus';
 
   return (
-    <Box sx={{ position: 'relative', width: size, height: size }}>
+    <Box
+      sx={{ position: 'relative', width: size, height: size }}
+      role="timer"
+      aria-live="off"
+      aria-label={`${modeLabel} timer: ${formatTime(timeLeft)} remaining`}
+    >
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
         <circle
           cx={size / 2}
@@ -64,8 +69,9 @@ const CircularTimer = ({
       >
         <Typography
           variant="h2"
+          component="div"
           sx={{
-            fontFamily: 'monospace',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
             fontWeight: 700,
             fontSize: '2.25rem',
             lineHeight: 1,

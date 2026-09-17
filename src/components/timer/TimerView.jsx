@@ -88,6 +88,8 @@ const TimerView = () => {
                   disabled={isDisabled}
                   onClick={() => switchMode(key)}
                   variant={isActive ? 'contained' : 'text'}
+                  aria-label={`Switch to ${config.label}`}
+                  aria-pressed={isActive}
                   sx={{
                     textTransform: 'none',
                     fontWeight: 600,
@@ -111,7 +113,15 @@ const TimerView = () => {
         <Tooltip title="Timer settings" arrow>
           <IconButton
             onClick={() => setSettingsOpen(true)}
-            sx={{ ml: 0.5, flexShrink: 0 }}
+            aria-label="Open timer settings"
+            sx={{
+              ml: 0.5,
+              flexShrink: 0,
+              '&:focus-visible': {
+                outline: `2px solid currentColor`,
+                outlineOffset: 2,
+              },
+            }}
           >
             <SettingsIcon />
           </IconButton>
@@ -149,6 +159,7 @@ const TimerView = () => {
             variant="contained"
             onClick={isRunning ? pause : start}
             startIcon={isRunning ? <PauseIcon /> : <PlayArrowIcon />}
+            aria-label={isRunning ? 'Pause timer' : 'Start timer'}
             sx={{
               mt: 5,
               px: 5,
@@ -167,14 +178,19 @@ const TimerView = () => {
           </Button>
 
           <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
-            <Tooltip title="Reset" arrow>
+            <Tooltip title="Reset current session" arrow>
               <IconButton
                 onClick={reset}
+                aria-label="Reset timer"
                 sx={{
                   width: 40,
                   height: 40,
                   border: `1px solid ${theme.palette.divider}`,
                   '&:hover': { bgcolor: 'action.hover' },
+                  '&:focus-visible': {
+                    outline: `2px solid currentColor`,
+                    outlineOffset: 2,
+                  },
                 }}
               >
                 <ResetIcon fontSize="small" />
@@ -185,11 +201,16 @@ const TimerView = () => {
                 <IconButton
                   onClick={skip}
                   disabled={!isRunning}
+                  aria-label="Skip to next session"
                   sx={{
                     width: 40,
                     height: 40,
                     border: `1px solid ${theme.palette.divider}`,
                     '&:hover': { bgcolor: 'action.hover' },
+                    '&:focus-visible': {
+                      outline: `2px solid currentColor`,
+                      outlineOffset: 2,
+                    },
                   }}
                 >
                   <SkipIcon fontSize="small" />
@@ -253,6 +274,7 @@ const TimerView = () => {
                   checked={settings.autoStartBreaks}
                   onChange={(e) => updateSetting('autoStartBreaks', e.target.checked)}
                   size="small"
+                  inputProps={{ 'aria-label': 'Auto-start breaks' }}
                 />
               }
               label={
@@ -268,6 +290,7 @@ const TimerView = () => {
                   checked={settings.autoStartFocus}
                   onChange={(e) => updateSetting('autoStartFocus', e.target.checked)}
                   size="small"
+                  inputProps={{ 'aria-label': 'Auto-start next focus' }}
                 />
               }
               label={
