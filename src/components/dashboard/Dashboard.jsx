@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -61,7 +61,7 @@ const Dashboard = () => {
   const { settings } = usePomodoroSettings();
   const activeMeta = MODE_META[mode];
 
-  const [snackbar, setSnackbar] = React.useState({
+  const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'info',
@@ -301,6 +301,7 @@ const Dashboard = () => {
   );
 
   // ---------- List renderers ----------
+
   const renderTaskList = (tasks, emptyContent, maxItems = 5) => {
     if (loading) return <LoadingSkeleton rows={3} />;
     if (error) return <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>Failed to load</Alert>;
@@ -339,21 +340,30 @@ const Dashboard = () => {
               }}
             >
               <ListItemText
+                disableTypography
                 primary={
-                  <Typography
-                    variant="body2"
+                  <Box
                     sx={{
-                      fontSize: '0.8rem',
-                      textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 0.75,
+                      fontSize: '0.8rem',
                       fontWeight: 500,
+                      textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
                     }}
                   >
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                    <Box
+                      component="span"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
                       {task.title}
-                    </span>
+                    </Box>
                     {task.priority && task.priority !== 'Medium' && (
                       <Chip
                         label={task.priority}
@@ -362,12 +372,12 @@ const Dashboard = () => {
                         sx={{ height: 16, '& .MuiChip-label': { fontSize: '0.5rem', px: 0.5, fontWeight: 600 } }}
                       />
                     )}
-                  </Typography>
+                  </Box>
                 }
                 secondary={
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                  <Box component="span" sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
                     {formatDate(task.dueDate)}
-                  </Typography>
+                  </Box>
                 }
               />
             </ListItemButton>
@@ -414,16 +424,35 @@ const Dashboard = () => {
               }}
             >
               <ListItemText
+                disableTypography
                 primary={
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500 }} noWrap>
+                  <Box
+                    component="div"
+                    sx={{
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {note.title || 'Untitled note'}
-                  </Typography>
+                  </Box>
                 }
                 secondary={
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                  <Box
+                    component="div"
+                    sx={{
+                      fontSize: '0.6rem',
+                      color: 'text.secondary',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {note.content ? note.content.substring(0, 35) : 'Empty note'}
                     {note.content && note.content.length > 35 ? '...' : ''}
-                  </Typography>
+                  </Box>
                 }
               />
             </ListItemButton>
@@ -470,15 +499,28 @@ const Dashboard = () => {
               }}
             >
               <ListItemText
+                disableTypography
                 primary={
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500 }} noWrap>
+                  <Box
+                    component="div"
+                    sx={{
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {event.title}
-                  </Typography>
+                  </Box>
                 }
                 secondary={
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
+                  <Box
+                    component="div"
+                    sx={{ fontSize: '0.6rem', color: 'text.secondary' }}
+                  >
                     {formatEventDate(event.date)}
-                  </Typography>
+                  </Box>
                 }
               />
             </ListItemButton>
@@ -713,7 +755,7 @@ const Dashboard = () => {
             <Typography
               variant="h2"
               sx={{
-                fontFamily: 'monospace',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
                 fontWeight: 700,
                 fontSize: '3.5rem',
                 lineHeight: 1,
