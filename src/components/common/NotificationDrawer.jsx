@@ -31,7 +31,6 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load notifications from localStorage on mount
   useEffect(() => {
     const savedNotifications = localStorage.getItem(STORAGE_KEY);
     
@@ -48,20 +47,17 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
       }
     }
     
-    // If we get here, either no saved data or invalid
     setNotifications([]);
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     setIsInitialized(true);
   }, []);
 
-  // Save to localStorage whenever notifications change
   useEffect(() => {
     if (isInitialized) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
     }
   }, [notifications, isInitialized]);
 
-  // Update unread count whenever notifications change
   useEffect(() => {
     if (isInitialized) {
       const unreadCount = notifications.filter(n => !n.read).length;
@@ -260,7 +256,9 @@ const NotificationDrawer = ({ open, onClose, onUnreadCountChange }) => {
                       </Typography>
                     </Box>
                   }
-                  secondaryTypographyProps={{ component: 'div' }}
+                  slotProps={{
+                    secondary: { component: 'div' },
+                  }}
                 />
               </ListItem>
               {index < notifications.length - 1 && <Divider />}

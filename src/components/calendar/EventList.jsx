@@ -164,7 +164,9 @@ const EventList = ({
                       )}
                     </Box>
                   }
-                  secondaryTypographyProps={{ component: 'div' }}
+                  slotProps={{
+                    secondary: { component: 'div' },
+                  }}
                 />
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                   <IconButton 
