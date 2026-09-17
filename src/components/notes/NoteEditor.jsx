@@ -9,12 +9,15 @@ import {
   Stack,
   Chip,
   IconButton,
+  Box,
+  Typography,
+  Tooltip,
   useTheme,
   useMediaQuery,
-  Autocomplete,
 } from '@mui/material';
 import {
   Close as CloseIcon,
+  Add as AddIcon,
   Label as LabelIcon,
 } from '@mui/icons-material';
 
@@ -34,6 +37,7 @@ const NoteEditor = ({
     content: '',
     tags: [],
   });
+  const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -46,6 +50,7 @@ const NoteEditor = ({
     } else {
       setFormData({ title: '', content: '', tags: [] });
     }
+    setTagInput('');
     setErrors({});
   }, [note, open]);
 
@@ -54,9 +59,55 @@ const NoteEditor = ({
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  const handleTagsChange = (event, newTags) => {
-    setFormData(prev => ({ ...prev, tags: newTags }));
+  // ---------- Tag handling ----------
+
+  const addTag = (rawTag) => {
+    const tag = rawTag.trim().replace(/^#/, ''); // strip leading # if typed
+    if (!tag) return;
+    if (formData.tags.includes(tag)) {
+      setTagInput('');
+      return; // already added
+    }
+    setFormData(prev => ({ ...prev, tags: [...prev.tags, tag] }));
+    setTagInput('');
   };
+
+  const handleTagInputChange = (e) => {
+    setTagInput(e.target.value);
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      e.stopPropagation();
+      addTag(tagInput);
+    } else if (e.key === 'Backspace' && !tagInput && formData.tags.length > 0) {
+      // Remove last tag on empty backspace
+      setFormData(prev => ({
+        ...prev,
+        tags: prev.tags.slice(0, -1),
+      }));
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(t => t !== tagToRemove),
+    }));
+  };
+
+  const handleAddTagClick = () => {
+    addTag(tagInput);
+  };
+
+  // Filter suggestions: existing tags not yet added, matching what's typed
+  const suggestions = (existingTags || [])
+    .filter(t => !formData.tags.includes(t))
+    .filter(t => !tagInput || t.toLowerCase().includes(tagInput.toLowerCase()))
+    .slice(0, 8);
+
+  // ---------- Save ----------
 
   const validate = () => {
     const newErrors = {};
@@ -67,10 +118,16 @@ const NoteEditor = ({
 
   const handleSubmit = () => {
     if (!validate()) return;
+    // Commit any remaining text in the tag input
+    let finalTags = formData.tags;
+    const pending = tagInput.trim().replace(/^#/, '');
+    if (pending && !finalTags.includes(pending)) {
+      finalTags = [...finalTags, pending];
+    }
     onSave({
       title: formData.title.trim(),
       content: formData.content || '',
-      tags: formData.tags || [],
+      tags: finalTags,
     });
   };
 
@@ -121,32 +178,80 @@ const NoteEditor = ({
             }}
           />
 
-          <Autocomplete
-            multiple
-            freeSolo
-            options={existingTags || []}
-            value={formData.tags || []}
-            onChange={handleTagsChange}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  label={option}
-                  {...getTagProps({ index })}
-                  size="small"
-                  icon={<LabelIcon sx={{ fontSize: 14 }} />}
-                />
-              ))
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Tags"
-                placeholder="Add tags and press Enter"
-                helperText="Type a tag and press Enter to add it"
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
+          {/* ---------- Tags ---------- */}
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{ display: 'block', mb: 1, color: 'text.secondary', fontWeight: 500 }}
+            >
+              Tags
+            </Typography>
+
+            {/* Current tags */}
+            {formData.tags.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
+                {formData.tags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    label={tag}
+                    size="small"
+                    icon={<LabelIcon sx={{ fontSize: 14 }} />}
+                    onDelete={() => handleRemoveTag(tag)}
+                    aria-label={`Remove tag ${tag}`}
+                  />
+                ))}
+              </Box>
             )}
-          />
+
+            {/* Input + Add button */}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField
+                size="small"
+                value={tagInput}
+                onChange={handleTagInputChange}
+                onKeyDown={handleTagKeyDown}
+                placeholder="Type a tag and press Enter"
+                fullWidth
+                helperText="Press Enter to add · Backspace to remove last"
+                slotProps={{
+                  htmlInput: {
+                    'aria-label': 'New tag',
+                  },
+                }}
+              />
+              <Button
+                variant="outlined"
+                onClick={handleAddTagClick}
+                disabled={!tagInput.trim()}
+                startIcon={<AddIcon />}
+                aria-label="Add tag"
+                sx={{ flexShrink: 0, height: 40 }}
+              >
+                Add
+              </Button>
+            </Box>
+
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <Box sx={{ mt: 1.5 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
+                  Suggestions
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {suggestions.map(tag => (
+                    <Chip
+                      key={tag}
+                      label={tag}
+                      size="small"
+                      variant="outlined"
+                      onClick={() => addTag(tag)}
+                      sx={{ cursor: 'pointer', fontSize: '0.7rem' }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </Box>
         </Stack>
       </DialogContent>
 
