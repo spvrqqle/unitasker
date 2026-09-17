@@ -7,12 +7,14 @@ import {
   Button,
   Paper,
   List,
-  ListItem,
+  ListItemButton,
   ListItemText,
   Divider,
   Chip,
   Skeleton,
   Alert,
+  Tooltip,
+  Snackbar,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -27,6 +29,7 @@ import {
   PlayArrow as PlayArrowIcon,
   Pause as PauseIcon,
   Timer as TimerIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useTimer } from '../../context/TimerContext';
@@ -47,7 +50,6 @@ const Dashboard = () => {
     error,
   } = useDashboardData();
 
-  // Live timer state from context
   const {
     mode,
     timeLeft,
@@ -57,8 +59,17 @@ const Dashboard = () => {
   } = useTimer();
 
   const { settings } = usePomodoroSettings();
-
   const activeMeta = MODE_META[mode];
+
+  const [snackbar, setSnackbar] = React.useState({
+    open: false,
+    message: '',
+    severity: 'info',
+  });
+
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -73,10 +84,8 @@ const Dashboard = () => {
     today.setHours(0, 0, 0, 0);
     const dueDate = new Date(date);
     dueDate.setHours(0, 0, 0, 0);
-
     if (dueDate.getTime() === today.getTime()) return 'Today';
     if (dueDate.getTime() < today.getTime()) return 'Overdue';
-
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -95,41 +104,152 @@ const Dashboard = () => {
     }
   };
 
-  const handleNavigateToTasks = () => {
-    window.dispatchEvent(new CustomEvent('navigationChange', { detail: 1 }));
+  // ---------- Navigation ----------
+  const navigate = (tab) => {
+    window.dispatchEvent(new CustomEvent('navigationChange', { detail: tab }));
   };
 
-  const handleNavigateToNotes = () => {
-    window.dispatchEvent(new CustomEvent('navigationChange', { detail: 2 }));
+  const handleNavigateToTasks = () => navigate(1);
+  const handleNavigateToNotes = () => navigate(2);
+  const handleNavigateToCalendar = () => navigate(3);
+  const handleNavigateToResources = () => navigate(4);
+  const handleNavigateToTimer = () => navigate(5);
+
+  // ---------- Timer toggle with feedback ----------
+  const handleTimerToggle = () => {
+    if (isRunning) {
+      pause();
+      showSnackbar('Focus timer paused', 'info');
+    } else {
+      start();
+      showSnackbar('Focus timer started', 'success');
+    }
   };
 
-  const handleNavigateToResources = () => {
-    window.dispatchEvent(new CustomEvent('navigationChange', { detail: 4 }));
-  };
+  // ---------- Reusable: card shell ----------
+  const SectionCard = ({ title, children, onViewAll, footerLabel }) => (
+    <Paper
+      sx={{
+        p: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 2,
+        minHeight: 0,
+        height: '100%',
+      }}
+    >
+      <Typography
+        variant="subtitle2"
+        sx={{
+          fontWeight: 700,
+          fontSize: '0.85rem',
+          flexShrink: 0,
+          mb: 1,
+        }}
+      >
+        {title}
+      </Typography>
+      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </Box>
+      {onViewAll && (
+        <Button
+          size="small"
+          onClick={onViewAll}
+          sx={{
+            fontSize: '0.7rem',
+            flexShrink: 0,
+            mt: 1,
+            alignSelf: 'flex-start',
+            p: 0.5,
+            minWidth: 0,
+            textTransform: 'none',
+            '&:hover': { bgcolor: 'action.hover' },
+            '&:focus-visible': {
+              outline: `2px solid ${theme.palette.primary.main}`,
+              outlineOffset: 2,
+              borderRadius: 1,
+            },
+          }}
+        >
+          {footerLabel || 'View all →'}
+        </Button>
+      )}
+    </Paper>
+  );
 
-  const handleNavigateToTimer = () => {
-    window.dispatchEvent(new CustomEvent('navigationChange', { detail: 5 }));
-  };
+  // ---------- Reusable: empty state ----------
+  const EmptyState = ({ icon, primary, hint }) => (
+    <Box
+      sx={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 0.5,
+        py: 2,
+        px: 1,
+        textAlign: 'center',
+      }}
+    >
+      {icon && (
+        <Box sx={{ color: 'text.disabled', mb: 0.5, '& svg': { fontSize: 28 } }}>
+          {icon}
+        </Box>
+      )}
+      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary', fontWeight: 500 }}>
+        {primary}
+      </Typography>
+      {hint && (
+        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>
+          {hint}
+        </Typography>
+      )}
+    </Box>
+  );
 
-  const handleNavigateToCalendar = () => {
-    window.dispatchEvent(new CustomEvent('navigationChange', { detail: 3 }));
-  };
+  // ---------- Reusable: loading skeleton ----------
+  const LoadingSkeleton = ({ rows = 3 }) => (
+    <Box sx={{ py: 1 }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} variant="text" height={24} sx={{ fontSize: '0.8rem' }} />
+      ))}
+    </Box>
+  );
 
+  // ---------- Stat card ----------
   const StatCard = ({ icon, title, value, onClick }) => (
     <Card
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      aria-label={onClick ? `Go to ${title}` : undefined}
       sx={{
         cursor: onClick ? 'pointer' : 'default',
         flex: 1,
         bgcolor: 'background.paper',
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
-        transition: 'all 0.2s',
+        transition: 'all 0.15s ease',
         '&:hover': onClick ? {
           transform: 'translateY(-2px)',
           boxShadow: theme.shadows[4],
         } : {},
+        '&:focus-visible': onClick ? {
+          outline: `2px solid ${theme.palette.primary.main}`,
+          outlineOffset: 2,
+        } : {},
       }}
-      onClick={onClick}
     >
       <CardContent sx={{
         p: 2,
@@ -167,45 +287,43 @@ const Dashboard = () => {
     </Card>
   );
 
-  const renderTaskList = (tasks, emptyMessage, maxItems = 6) => {
-    if (loading) {
-      return (
-        <Box sx={{ py: 1 }}>
-          <Skeleton variant="text" height={28} />
-          <Skeleton variant="text" height={28} />
-          <Skeleton variant="text" height={28} />
-        </Box>
-      );
-    }
-
-    if (error) {
-      return (
-        <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>
-          Failed to load data
-        </Alert>
-      );
-    }
-
-    if (tasks.length === 0) {
-      return (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 1.5, fontSize: '0.8rem' }}>
-          {emptyMessage}
-        </Typography>
-      );
-    }
-
+  // ---------- Task list renderer ----------
+  const renderTaskList = (tasks, emptyContent, maxItems = 5) => {
+    if (loading) return <LoadingSkeleton rows={3} />;
+    if (error) return <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>Failed to load</Alert>;
+    if (!tasks || tasks.length === 0) return emptyContent;
     return (
-      <List dense sx={{
-        py: 0,
-        flex: 1,
-        overflow: 'auto',
-        '&::-webkit-scrollbar': { width: '3px' },
-        '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
-      }}>
+      <List
+        dense
+        disablePadding
+        sx={{
+          py: 0,
+          flex: 1,
+          overflow: 'auto',
+          '&::-webkit-scrollbar': { width: '4px' },
+          '&::-webkit-scrollbar-thumb': {
+            background: theme.palette.divider,
+            borderRadius: '2px',
+          },
+        }}
+      >
         {tasks.slice(0, maxItems).map((task, index) => (
           <React.Fragment key={task.id}>
             {index > 0 && <Divider sx={{ opacity: 0.5 }} />}
-            <ListItem sx={{ px: 0, py: 0.5 }}>
+            <ListItemButton
+              onClick={handleNavigateToTasks}
+              aria-label={`Open task ${task.title}`}
+              sx={{
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                transition: 'background-color 0.15s ease',
+                '&:focus-visible': {
+                  outline: `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: -2,
+                },
+              }}
+            >
               <ListItemText
                 primary={
                   <Typography
@@ -215,11 +333,13 @@ const Dashboard = () => {
                       textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 1,
+                      gap: 0.75,
                       fontWeight: 500,
                     }}
                   >
-                    {task.title}
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {task.title}
+                    </span>
                     {task.priority && task.priority !== 'Medium' && (
                       <Chip
                         label={task.priority}
@@ -236,51 +356,49 @@ const Dashboard = () => {
                   </Typography>
                 }
               />
-            </ListItem>
+            </ListItemButton>
           </React.Fragment>
         ))}
       </List>
     );
   };
 
-  const renderNoteList = (notes, emptyMessage, maxItems = 4) => {
-    if (loading) {
-      return (
-        <Box sx={{ py: 1 }}>
-          <Skeleton variant="text" height={28} />
-          <Skeleton variant="text" height={28} />
-        </Box>
-      );
-    }
-
-    if (error) {
-      return (
-        <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>
-          Failed to load data
-        </Alert>
-      );
-    }
-
-    if (notes.length === 0) {
-      return (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 1.5, fontSize: '0.8rem' }}>
-          {emptyMessage}
-        </Typography>
-      );
-    }
-
+  // ---------- Note list renderer ----------
+  const renderNoteList = (notes, emptyContent, maxItems = 4) => {
+    if (loading) return <LoadingSkeleton rows={3} />;
+    if (error) return <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>Failed to load</Alert>;
+    if (!notes || notes.length === 0) return emptyContent;
     return (
-      <List dense sx={{
-        py: 0,
-        flex: 1,
-        overflow: 'auto',
-        '&::-webkit-scrollbar': { width: '3px' },
-        '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
-      }}>
+      <List
+        dense
+        disablePadding
+        sx={{
+          py: 0,
+          flex: 1,
+          overflow: 'auto',
+          '&::-webkit-scrollbar': { width: '4px' },
+          '&::-webkit-scrollbar-thumb': {
+            background: theme.palette.divider,
+            borderRadius: '2px',
+          },
+        }}
+      >
         {notes.slice(0, maxItems).map((note, index) => (
           <React.Fragment key={note.id}>
             {index > 0 && <Divider sx={{ opacity: 0.5 }} />}
-            <ListItem sx={{ px: 0, py: 0.5 }}>
+            <ListItemButton
+              onClick={handleNavigateToNotes}
+              aria-label={`Open note ${note.title || 'Untitled'}`}
+              sx={{
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                '&:focus-visible': {
+                  outline: `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: -2,
+                },
+              }}
+            >
               <ListItemText
                 primary={
                   <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500 }} noWrap>
@@ -294,54 +412,52 @@ const Dashboard = () => {
                   </Typography>
                 }
               />
-            </ListItem>
+            </ListItemButton>
           </React.Fragment>
         ))}
       </List>
     );
   };
 
-  const renderEventList = (events, emptyMessage, maxItems = 3) => {
-    if (loading) {
-      return (
-        <Box sx={{ py: 1 }}>
-          <Skeleton variant="text" height={28} />
-          <Skeleton variant="text" height={28} />
-        </Box>
-      );
-    }
-
-    if (error) {
-      return (
-        <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>
-          Failed to load data
-        </Alert>
-      );
-    }
-
-    if (events.length === 0) {
-      return (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 1.5, fontSize: '0.8rem' }}>
-          {emptyMessage}
-        </Typography>
-      );
-    }
-
+  // ---------- Event list renderer ----------
+  const renderEventList = (events, emptyContent, maxItems = 3) => {
+    if (loading) return <LoadingSkeleton rows={2} />;
+    if (error) return <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>Failed to load</Alert>;
+    if (!events || events.length === 0) return emptyContent;
     return (
-      <List dense sx={{
-        py: 0,
-        flex: 1,
-        overflow: 'auto',
-        '&::-webkit-scrollbar': { width: '3px' },
-        '&::-webkit-scrollbar-thumb': { background: theme.palette.divider, borderRadius: '2px' },
-      }}>
+      <List
+        dense
+        disablePadding
+        sx={{
+          py: 0,
+          flex: 1,
+          overflow: 'auto',
+          '&::-webkit-scrollbar': { width: '4px' },
+          '&::-webkit-scrollbar-thumb': {
+            background: theme.palette.divider,
+            borderRadius: '2px',
+          },
+        }}
+      >
         {events.slice(0, maxItems).map((event, index) => (
           <React.Fragment key={event.id}>
             {index > 0 && <Divider sx={{ opacity: 0.5 }} />}
-            <ListItem sx={{ px: 0, py: 0.5 }}>
+            <ListItemButton
+              onClick={handleNavigateToCalendar}
+              aria-label={`Open event ${event.title}`}
+              sx={{
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                '&:focus-visible': {
+                  outline: `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: -2,
+                },
+              }}
+            >
               <ListItemText
                 primary={
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500 }} noWrap>
                     {event.title}
                   </Typography>
                 }
@@ -351,7 +467,7 @@ const Dashboard = () => {
                   </Typography>
                 }
               />
-            </ListItem>
+            </ListItemButton>
           </React.Fragment>
         ))}
       </List>
@@ -368,10 +484,10 @@ const Dashboard = () => {
       gap: 1.5,
       overflow: 'hidden',
     }}>
-      {/* Row 1: Stats Cards */}
+      {/* Row 1: Stat cards */}
       <Box sx={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
         gap: 1.5,
         flexShrink: 0,
       }}>
@@ -401,94 +517,72 @@ const Dashboard = () => {
         />
       </Box>
 
-      {/* Row 2: Quick Action Buttons */}
+      {/* Row 2: Quick actions */}
       <Box sx={{
-        display: 'flex',
-        gap: 1.5,
+        display: 'grid',
+        gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+        gap: 1,
         flexShrink: 0,
-        alignItems: 'center',
       }}>
         <Button
           variant="contained"
-          startIcon={<AddIcon sx={{ fontSize: 20 }} />}
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={handleNavigateToTasks}
-          sx={{
-            flex: 1.2,
-            py: 0.75,
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-          }}
           size="small"
+          aria-label="Create new task"
+          sx={{ py: 0.75, fontSize: '0.75rem', fontWeight: 600, minWidth: 0, whiteSpace: 'nowrap' }}
         >
           New task
         </Button>
         <Button
           variant="outlined"
-          startIcon={<NoteIcon sx={{ fontSize: 18 }} />}
+          startIcon={<NoteIcon sx={{ fontSize: 16 }} />}
           onClick={handleNavigateToNotes}
-          sx={{
-            flex: 1,
-            py: 0.75,
-            fontSize: '0.75rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-          }}
           size="small"
+          aria-label="Go to Notes"
+          sx={{ py: 0.75, fontSize: '0.75rem', minWidth: 0, whiteSpace: 'nowrap' }}
         >
           Notes
         </Button>
         <Button
           variant="outlined"
-          startIcon={<FolderIcon sx={{ fontSize: 18 }} />}
+          startIcon={<FolderIcon sx={{ fontSize: 16 }} />}
           onClick={handleNavigateToResources}
-          sx={{
-            flex: 1,
-            py: 0.75,
-            fontSize: '0.75rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-          }}
           size="small"
+          aria-label="Go to Resources"
+          sx={{ py: 0.75, fontSize: '0.75rem', minWidth: 0, whiteSpace: 'nowrap' }}
         >
           Resources
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={isRunning ? <PauseIcon sx={{ fontSize: 18 }} /> : <TimerIcon sx={{ fontSize: 18 }} />}
-          onClick={isRunning ? pause : start}
-          sx={{
-            flex: 1,
-            py: 0.75,
-            fontSize: '0.75rem',
-            fontWeight: isRunning ? 600 : 400,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-            ...(isRunning && {
-              borderColor: activeMeta.color,
-              color: activeMeta.color,
-              '&:hover': {
+        <Tooltip title={isRunning ? 'Pause focus timer' : 'Start focus timer'} arrow>
+          <Button
+            variant="outlined"
+            startIcon={isRunning ? <PauseIcon sx={{ fontSize: 16 }} /> : <TimerIcon sx={{ fontSize: 16 }} />}
+            onClick={handleTimerToggle}
+            size="small"
+            aria-label={isRunning ? 'Pause focus timer' : 'Start focus timer'}
+            sx={{
+              py: 0.75,
+              fontSize: '0.75rem',
+              fontWeight: isRunning ? 600 : 400,
+              minWidth: 0,
+              whiteSpace: 'nowrap',
+              ...(isRunning && {
                 borderColor: activeMeta.color,
-                bgcolor: `${activeMeta.color}10`,
-              },
-            }),
-          }}
-          size="small"
-        >
-          {isRunning ? formatTime(timeLeft) : `Start ${settings.focusMinutes}:00`}
-        </Button>
+                color: activeMeta.color,
+                '&:hover': {
+                  borderColor: activeMeta.color,
+                  bgcolor: `${activeMeta.color}10`,
+                },
+              }),
+            }}
+          >
+            {isRunning ? formatTime(timeLeft) : `Start ${settings.focusMinutes}:00`}
+          </Button>
+        </Tooltip>
       </Box>
 
-      {/* Row 3: Main Content Grid */}
+      {/* Row 3: Main content */}
       <Box sx={{
         display: 'grid',
         gridTemplateColumns: isTwoColumn ? '1fr 0.8fr' : '1fr',
@@ -497,7 +591,6 @@ const Dashboard = () => {
         minHeight: 0,
         overflow: 'hidden',
       }}>
-        {/* Left/Main Column */}
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -513,61 +606,35 @@ const Dashboard = () => {
             flex: 1,
             minHeight: 0,
           }}>
-            <Paper sx={{
-              p: 1.5,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              bgcolor: 'background.paper',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-              minHeight: 0,
-            }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
-                Today's Tasks
-              </Typography>
-              <Box sx={{
-                flex: 1,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                {renderTaskList(todayTasks, 'Nothing due today. Enjoy the calm.', 5)}
-              </Box>
-              {todayTasks.length > 0 && (
-                <Button size="small" onClick={handleNavigateToTasks} sx={{ fontSize: '0.65rem', flexShrink: 0, mt: 0.5, alignSelf: 'flex-start' }}>
-                  View all →
-                </Button>
+            <SectionCard
+              title="Today's Tasks"
+              onViewAll={todayTasks.length > 0 ? handleNavigateToTasks : undefined}
+              footerLabel="View tasks →"
+            >
+              {renderTaskList(
+                todayTasks,
+                <EmptyState
+                  icon={<CheckCircleIcon />}
+                  primary="Nothing due today"
+                  hint="Enjoy the calm."
+                />
               )}
-            </Paper>
+            </SectionCard>
 
-            <Paper sx={{
-              p: 1.5,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              bgcolor: 'background.paper',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-              minHeight: 0,
-            }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
-                Upcoming Deadlines
-              </Typography>
-              <Box sx={{
-                flex: 1,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                {renderTaskList(upcomingTasks, 'No upcoming deadlines.', 5)}
-              </Box>
-              {upcomingTasks.length > 0 && (
-                <Button size="small" onClick={handleNavigateToTasks} sx={{ fontSize: '0.65rem', flexShrink: 0, mt: 0.5, alignSelf: 'flex-start' }}>
-                  View all →
-                </Button>
+            <SectionCard
+              title="Upcoming Deadlines"
+              onViewAll={upcomingTasks.length > 0 ? handleNavigateToTasks : undefined}
+              footerLabel="View tasks →"
+            >
+              {renderTaskList(
+                upcomingTasks,
+                <EmptyState
+                  icon={<ScheduleIcon />}
+                  primary="No upcoming deadlines"
+                  hint="You're ahead of schedule."
+                />
               )}
-            </Paper>
+            </SectionCard>
           </Box>
 
           {/* Recent Notes + Next Events */}
@@ -578,68 +645,42 @@ const Dashboard = () => {
             flex: 1,
             minHeight: 0,
           }}>
-            <Paper sx={{
-              p: 1.5,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              bgcolor: 'background.paper',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-              minHeight: 0,
-            }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
-                Recent Notes
-              </Typography>
-              <Box sx={{
-                flex: 1,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                {renderNoteList(recentNotes, 'No notes yet.', 4)}
-              </Box>
-              {recentNotes.length > 0 && (
-                <Button size="small" onClick={handleNavigateToNotes} sx={{ fontSize: '0.65rem', flexShrink: 0, mt: 0.5, alignSelf: 'flex-start' }}>
-                  View all →
-                </Button>
+            <SectionCard
+              title="Recent Notes"
+              onViewAll={recentNotes.length > 0 ? handleNavigateToNotes : undefined}
+              footerLabel="View notes →"
+            >
+              {renderNoteList(
+                recentNotes,
+                <EmptyState
+                  icon={<NoteIcon />}
+                  primary="No notes yet"
+                  hint="Start writing to capture ideas."
+                />
               )}
-            </Paper>
+            </SectionCard>
 
-            <Paper sx={{
-              p: 1.5,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              bgcolor: 'background.paper',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-              minHeight: 0,
-            }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, mb: 0.5 }}>
-                Next Events
-              </Typography>
-              <Box sx={{
-                flex: 1,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                {renderEventList(upcomingEvents, 'Calendar is clear.', 3)}
-              </Box>
-              {upcomingEvents.length > 0 && (
-                <Button size="small" onClick={handleNavigateToCalendar} sx={{ fontSize: '0.65rem', flexShrink: 0, mt: 0.5, alignSelf: 'flex-start' }}>
-                  View all →
-                </Button>
+            <SectionCard
+              title="Next Events"
+              onViewAll={upcomingEvents.length > 0 ? handleNavigateToCalendar : undefined}
+              footerLabel="View calendar →"
+            >
+              {renderEventList(
+                upcomingEvents,
+                <EmptyState
+                  icon={<EventIcon />}
+                  primary="Calendar is clear"
+                  hint="No upcoming events."
+                />
               )}
-            </Paper>
+            </SectionCard>
           </Box>
         </Box>
 
-        {/* Right Column: Focus Timer Widget */}
+        {/* Right: Focus Timer widget */}
         {isTwoColumn && (
           <Paper sx={{
-            p: 2,
+            p: 3,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -648,7 +689,7 @@ const Dashboard = () => {
             border: `1px solid ${theme.palette.divider}`,
             borderRadius: 2,
             minHeight: 0,
-            gap: 1,
+            gap: 1.5,
           }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem', alignSelf: 'flex-start' }}>
               Focus Timer
@@ -683,7 +724,8 @@ const Dashboard = () => {
               variant="contained"
               size="medium"
               startIcon={isRunning ? <PauseIcon /> : <PlayArrowIcon />}
-              onClick={isRunning ? pause : start}
+              onClick={handleTimerToggle}
+              aria-label={isRunning ? 'Pause focus timer' : 'Start focus timer'}
               sx={{
                 mt: 1,
                 px: 3,
@@ -701,13 +743,38 @@ const Dashboard = () => {
               variant="text"
               size="small"
               onClick={handleNavigateToTimer}
-              sx={{ fontSize: '0.7rem', color: 'text.secondary' }}
+              aria-label="Open full timer page"
+              sx={{
+                fontSize: '0.7rem',
+                color: 'text.secondary',
+                '&:focus-visible': {
+                  outline: `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: 2,
+                  borderRadius: 1,
+                },
+              }}
             >
               Open full timer →
             </Button>
           </Paper>
         )}
       </Box>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={2500}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
