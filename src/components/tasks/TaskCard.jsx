@@ -15,6 +15,7 @@ import {
   Edit as EditIcon,
   PriorityHigh as PriorityHighIcon,
   LowPriority as LowPriorityIcon,
+  NotificationsActive as ReminderIcon,
 } from '@mui/icons-material';
 
 const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
@@ -22,14 +23,10 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'High':
-        return 'error';
-      case 'Medium':
-        return 'warning';
-      case 'Low':
-        return 'success';
-      default:
-        return 'default';
+      case 'High': return 'error';
+      case 'Medium': return 'warning';
+      case 'Low': return 'success';
+      default: return 'default';
     }
   };
 
@@ -38,7 +35,7 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
       case 'High':
         return <PriorityHighIcon fontSize="small" />;
       case 'Medium':
-        return <PriorityHighIcon fontSize="small" color="warning" />;
+        return <PriorityHighIcon fontSize="small" />;
       case 'Low':
         return <LowPriorityIcon fontSize="small" />;
       default:
@@ -48,24 +45,20 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Completed':
-        return 'success';
-      case 'In Progress':
-        return 'primary';
-      case 'To Do':
-        return 'default';
-      default:
-        return 'default';
+      case 'Completed': return 'success';
+      case 'In Progress': return 'primary';
+      case 'To Do': return 'default';
+      default: return 'default';
     }
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No due date';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -74,26 +67,33 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
     return new Date(task.dueDate) < new Date();
   };
 
+  const isCompleted = task.status === 'Completed';
+  const overdue = isOverdue();
+
   return (
     <Card
       sx={{
-        mb: 2,
-        opacity: task.status === 'Completed' ? 0.7 : 1,
-        transition: 'all 0.2s',
+        mb: 1.5,
+        opacity: isCompleted ? 0.75 : 1,
+        transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
+        bgcolor: 'background.paper',
+        border: `1px solid ${theme.palette.divider}`,
+        borderLeft: overdue ? `4px solid ${theme.palette.error.main}` : undefined,
+        borderRadius: 2,
         '&:hover': {
-          boxShadow: theme.shadows[4],
-          transform: 'translateY(-2px)',
+          boxShadow: theme.shadows[3],
         },
-        borderLeft: isOverdue() ? `4px solid ${theme.palette.error.main}` : 'none',
       }}
     >
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
           {/* Checkbox */}
           <Checkbox
-            checked={task.status === 'Completed'}
+            checked={isCompleted}
             onChange={() => onToggleComplete(task.id)}
-            sx={{ mt: -1 }}
+            inputProps={{ 'aria-label': `Mark "${task.title}" as ${isCompleted ? 'incomplete' : 'complete'}` }}
+            size="small"
+            sx={{ mt: -0.5, ml: -0.5 }}
           />
 
           {/* Content */}
@@ -102,8 +102,10 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
               variant="subtitle1"
               sx={{
                 fontWeight: 600,
-                textDecoration: task.status === 'Completed' ? 'line-through' : 'none',
-                color: task.status === 'Completed' ? 'text.secondary' : 'text.primary',
+                fontSize: '0.95rem',
+                textDecoration: isCompleted ? 'line-through' : 'none',
+                color: isCompleted ? 'text.secondary' : 'text.primary',
+                wordBreak: 'break-word',
               }}
             >
               {task.title}
@@ -115,6 +117,7 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
                 color="text.secondary"
                 sx={{
                   mt: 0.5,
+                  fontSize: '0.8rem',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
@@ -125,42 +128,50 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
               </Typography>
             )}
 
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-              {/* Priority Chip */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1.25 }}>
+              {/* Priority chip */}
               <Chip
                 icon={getPriorityIcon(task.priority)}
                 label={task.priority}
                 size="small"
                 color={getPriorityColor(task.priority)}
                 variant="outlined"
+                sx={{ height: 22, '& .MuiChip-label': { fontSize: '0.7rem', px: 1 } }}
               />
 
-              {/* Status Chip */}
+              {/* Status chip */}
               <Chip
                 label={task.status}
                 size="small"
                 color={getStatusColor(task.status)}
+                sx={{ height: 22, '& .MuiChip-label': { fontSize: '0.7rem', px: 1 } }}
               />
 
-              {/* Due Date Chip */}
+              {/* Due date chip */}
               <Chip
                 label={formatDate(task.dueDate)}
                 size="small"
                 variant="outlined"
-                color={isOverdue() ? 'error' : 'default'}
-                sx={{ 
-                  borderColor: isOverdue() ? theme.palette.error.main : undefined,
-                  color: isOverdue() ? theme.palette.error.main : undefined,
+                color={overdue ? 'error' : 'default'}
+                sx={{
+                  height: 22,
+                  '& .MuiChip-label': { fontSize: '0.7rem', px: 1 },
+                  ...(overdue && {
+                    borderColor: theme.palette.error.main,
+                    color: theme.palette.error.main,
+                  }),
                 }}
               />
 
-              {/* Reminder Chip */}
+              {/* Reminder chip */}
               {task.reminder && (
                 <Chip
-                  label="🔔 Reminder"
+                  icon={<ReminderIcon sx={{ fontSize: 14 }} />}
+                  label="Reminder"
                   size="small"
                   color="info"
                   variant="outlined"
+                  sx={{ height: 22, '& .MuiChip-label': { fontSize: '0.7rem', px: 1 } }}
                 />
               )}
             </Box>
@@ -168,13 +179,24 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }) => {
 
           {/* Actions */}
           <Box sx={{ display: 'flex', flexShrink: 0 }}>
-            <Tooltip title="Edit">
-              <IconButton size="small" onClick={() => onEdit(task)}>
+            <Tooltip title="Edit task" arrow>
+              <IconButton
+                size="small"
+                onClick={() => onEdit(task)}
+                aria-label={`Edit task ${task.title}`}
+                sx={{ '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 } }}
+              >
                 <EditIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton size="small" onClick={() => onDelete(task.id)} color="error">
+            <Tooltip title="Delete task" arrow>
+              <IconButton
+                size="small"
+                onClick={() => onDelete(task.id)}
+                aria-label={`Delete task ${task.title}`}
+                color="error"
+                sx={{ '&:focus-visible': { outline: `2px solid ${theme.palette.error.main}`, outlineOffset: 2 } }}
+              >
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Tooltip>

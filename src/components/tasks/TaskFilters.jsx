@@ -9,10 +9,15 @@ import {
   InputAdornment,
   Chip,
   Stack,
+  Tooltip,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  FilterList as FilterIcon,
+} from '@mui/icons-material';
 
 const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
   const theme = useTheme();
@@ -38,7 +43,6 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
   return (
     <Box sx={{ mb: 3 }}>
-      {/* Filters row */}
       <Box
         sx={{
           display: 'grid',
@@ -47,7 +51,7 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
             sm: 'repeat(2, 1fr)',
             md: '2fr 1fr 1fr 1.2fr 1fr',
           },
-          gap: 2,
+          gap: 1.5,
           alignItems: 'center',
         }}
       >
@@ -68,11 +72,14 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
                 ),
                 endAdornment: filters.searchTerm ? (
                   <InputAdornment position="end">
-                    <ClearIcon
-                      fontSize="small"
-                      sx={{ cursor: 'pointer' }}
-                      onClick={handleClearSearch}
-                    />
+                    <Tooltip title="Clear search" arrow>
+                      <ClearIcon
+                        fontSize="small"
+                        sx={{ cursor: 'pointer' }}
+                        onClick={handleClearSearch}
+                        aria-label="Clear search"
+                      />
+                    </Tooltip>
                   </InputAdornment>
                 ) : null,
               },
@@ -82,8 +89,9 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
         {/* Status */}
         <FormControl size="small" fullWidth>
-          <InputLabel>Status</InputLabel>
+          <InputLabel id="task-status-label">Status</InputLabel>
           <Select
+            labelId="task-status-label"
             value={filters.status || 'All'}
             onChange={handleChange('status')}
             label="Status"
@@ -97,8 +105,9 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
         {/* Priority */}
         <FormControl size="small" fullWidth>
-          <InputLabel>Priority</InputLabel>
+          <InputLabel id="task-priority-label">Priority</InputLabel>
           <Select
+            labelId="task-priority-label"
             value={filters.priority || 'All'}
             onChange={handleChange('priority')}
             label="Priority"
@@ -112,8 +121,9 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
         {/* Sort By */}
         <FormControl size="small" fullWidth>
-          <InputLabel>Sort By</InputLabel>
+          <InputLabel id="task-sortby-label">Sort By</InputLabel>
           <Select
+            labelId="task-sortby-label"
             value={filters.sortBy || 'dueDate'}
             onChange={handleChange('sortBy')}
             label="Sort By"
@@ -127,8 +137,9 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
         {/* Sort Direction */}
         <FormControl size="small" fullWidth>
-          <InputLabel>Order</InputLabel>
+          <InputLabel id="task-order-label">Order</InputLabel>
           <Select
+            labelId="task-order-label"
             value={filters.sortDirection || 'asc'}
             onChange={handleChange('sortDirection')}
             label="Order"
@@ -139,15 +150,16 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
         </FormControl>
       </Box>
 
-      {/* Active filter chips */}
       {hasActiveFilters && (
         <Box sx={{ mt: 2 }}>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center">
+            <FilterIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
             {filters.status !== 'All' && (
               <Chip
                 label={`Status: ${filters.status}`}
                 size="small"
                 onDelete={() => onFilterChange({ ...filters, status: 'All' })}
+                sx={{ height: 24, '& .MuiChip-label': { fontSize: '0.7rem' } }}
               />
             )}
             {filters.priority !== 'All' && (
@@ -155,6 +167,7 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
                 label={`Priority: ${filters.priority}`}
                 size="small"
                 onDelete={() => onFilterChange({ ...filters, priority: 'All' })}
+                sx={{ height: 24, '& .MuiChip-label': { fontSize: '0.7rem' } }}
               />
             )}
             {filters.searchTerm && (
@@ -162,14 +175,16 @@ const TaskFilters = ({ filters, onFilterChange, onClearFilters }) => {
                 label={`Search: "${filters.searchTerm}"`}
                 size="small"
                 onDelete={handleClearSearch}
+                sx={{ height: 24, '& .MuiChip-label': { fontSize: '0.7rem' } }}
               />
             )}
             {(filters.status !== 'All' || filters.priority !== 'All' || filters.searchTerm) && (
               <Chip
-                label="Clear All"
+                label="Clear all"
                 size="small"
                 color="primary"
                 onClick={onClearFilters}
+                sx={{ height: 24, '& .MuiChip-label': { fontSize: '0.7rem' }, cursor: 'pointer' }}
               />
             )}
           </Stack>

@@ -11,16 +11,18 @@ import {
   Select,
   MenuItem,
   Stack,
+  IconButton,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
+import { Close as CloseIcon } from '@mui/icons-material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
 const TaskForm = ({ open, onClose, onSave, task = null }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  
   const isEditing = !!task;
 
   const [formData, setFormData] = useState({
@@ -31,7 +33,6 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
     status: 'To Do',
     reminder: null,
   });
-
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -60,40 +61,31 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
   const handleChange = (field) => (event) => {
     const value = event.target.value;
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   const handleDateChange = (field) => (date) => {
     setFormData(prev => ({ ...prev, [field]: date }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = () => {
-    if (!validateForm()) return;
-
-    const dataToSave = {
+    if (!validate()) return;
+    onSave({
       title: formData.title.trim(),
       description: formData.description.trim(),
       dueDate: formData.dueDate ? formData.dueDate.toISOString() : null,
       priority: formData.priority,
       status: formData.status,
       reminder: formData.reminder ? formData.reminder.toISOString() : null,
-    };
-
-    onSave(dataToSave);
+    });
   };
 
   return (
@@ -105,8 +97,11 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>
-          {isEditing ? 'Edit Task' : 'Create New Task'}
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{isEditing ? 'Edit Task' : 'Create New Task'}</span>
+          <IconButton onClick={onClose} size="small" aria-label="Close dialog">
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
 
         <DialogContent dividers>
@@ -120,6 +115,7 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
               fullWidth
               autoFocus
               placeholder="Enter task title..."
+              slotProps={{ inputLabel: { shrink: true } }}
             />
 
             <TextField
@@ -130,6 +126,7 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
               rows={3}
               fullWidth
               placeholder="Add details about this task..."
+              slotProps={{ inputLabel: { shrink: true } }}
             />
 
             <DateTimePicker
@@ -141,13 +138,15 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
                   fullWidth: true,
                   error: !!errors.dueDate,
                   helperText: errors.dueDate,
+                  slotProps: { inputLabel: { shrink: true } },
                 },
               }}
             />
 
             <FormControl fullWidth>
-              <InputLabel>Priority</InputLabel>
+              <InputLabel id="task-form-priority-label">Priority</InputLabel>
               <Select
+                labelId="task-form-priority-label"
                 value={formData.priority}
                 onChange={handleChange('priority')}
                 label="Priority"
@@ -159,8 +158,9 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
             </FormControl>
 
             <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
+              <InputLabel id="task-form-status-label">Status</InputLabel>
               <Select
+                labelId="task-form-status-label"
                 value={formData.status}
                 onChange={handleChange('status')}
                 label="Status"
@@ -179,6 +179,7 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
                 textField: {
                   fullWidth: true,
                   helperText: 'You will be notified at this time',
+                  slotProps: { inputLabel: { shrink: true } },
                 },
               }}
             />
@@ -189,11 +190,7 @@ const TaskForm = ({ open, onClose, onSave, task = null }) => {
           <Button onClick={onClose} color="inherit">
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            color="primary"
-          >
+          <Button onClick={handleSubmit} variant="contained">
             {isEditing ? 'Update Task' : 'Create Task'}
           </Button>
         </DialogActions>

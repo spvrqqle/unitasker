@@ -5,15 +5,22 @@ import {
   Button,
   Fab,
   Paper,
-  Stack,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
+  Tooltip,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Sort as SortIcon,
+  Refresh as RefreshIcon,
+  TaskAlt as TaskIcon,
 } from '@mui/icons-material';
 import TaskCard from './TaskCard';
 import TaskForm from './TaskForm';
@@ -23,7 +30,7 @@ import { useTasks } from '../../hooks/useTasks';
 const TaskList = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const {
     tasks,
     loading,
@@ -43,58 +50,60 @@ const TaskList = () => {
     sortDirection: 'asc',
     searchTerm: '',
   });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, task: null });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info',
+  });
 
-  // Filter and sort tasks
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  // Filter + sort
   const filteredTasks = useMemo(() => {
     let result = [...tasks];
 
-    // Status filter
     if (filters.status !== 'All') {
-      result = result.filter(task => task.status === filters.status);
+      result = result.filter(t => t.status === filters.status);
     }
-
-    // Priority filter
     if (filters.priority !== 'All') {
-      result = result.filter(task => task.priority === filters.priority);
+      result = result.filter(t => t.priority === filters.priority);
     }
-
-    // Search filter
     if (filters.searchTerm) {
       const search = filters.searchTerm.toLowerCase();
-      result = result.filter(task =>
-        task.title.toLowerCase().includes(search) ||
-        (task.description && task.description.toLowerCase().includes(search))
+      result = result.filter(t =>
+        t.title.toLowerCase().includes(search) ||
+        (t.description && t.description.toLowerCase().includes(search))
       );
     }
 
-    // Sort
     result.sort((a, b) => {
-      let compareA = a[filters.sortBy] || '';
-      let compareB = b[filters.sortBy] || '';
+      let cmpA = a[filters.sortBy];
+      let cmpB = b[filters.sortBy];
 
       if (filters.sortBy === 'dueDate' || filters.sortBy === 'createdAt') {
-        compareA = compareA ? new Date(compareA).getTime() : 0;
-        compareB = compareB ? new Date(compareB).getTime() : 0;
+        cmpA = cmpA ? new Date(cmpA).getTime() : 0;
+        cmpB = cmpB ? new Date(cmpB).getTime() : 0;
       } else if (filters.sortBy === 'priority') {
-        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
-        compareA = priorityOrder[compareA] || 0;
-        compareB = priorityOrder[compareB] || 0;
+        const order = { High: 3, Medium: 2, Low: 1 };
+        cmpA = order[cmpA] || 0;
+        cmpB = order[cmpB] || 0;
       } else {
-        compareA = String(compareA).toLowerCase();
-        compareB = String(compareB).toLowerCase();
+        cmpA = String(cmpA || '').toLowerCase();
+        cmpB = String(cmpB || '').toLowerCase();
       }
 
-      if (compareA < compareB) return filters.sortDirection === 'asc' ? -1 : 1;
-      if (compareA > compareB) return filters.sortDirection === 'asc' ? 1 : -1;
+      if (cmpA < cmpB) return filters.sortDirection === 'asc' ? -1 : 1;
+      if (cmpA > cmpB) return filters.sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
     return result;
   }, [tasks, filters]);
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
+  const handleFilterChange = (newFilters) => setFilters(newFilters);
 
   const handleClearFilters = () => {
     setFilters({
@@ -110,8 +119,9 @@ const TaskList = () => {
     try {
       await addTask(taskData);
       setFormOpen(false);
+      showSnackbar('Task created', 'success');
     } catch (err) {
-      console.error('Failed to add task:', err);
+      showSnackbar('Failed to create task', 'error');
     }
   };
 
@@ -120,30 +130,40 @@ const TaskList = () => {
       await editTask(editingTask.id, taskData);
       setFormOpen(false);
       setEditingTask(null);
+      showSnackbar('Task updated', 'success');
     } catch (err) {
-      console.error('Failed to update task:', err);
+      showSnackbar('Failed to update task', 'error');
     }
   };
 
   const handleToggleComplete = async (id) => {
     const task = tasks.find(t => t.id === id);
-    if (task) {
-      const newStatus = task.status === 'Completed' ? 'To Do' : 'Completed';
-      try {
-        await editTask(id, { status: newStatus });
-      } catch (err) {
-        console.error('Failed to toggle task:', err);
-      }
+    if (!task) return;
+    const newStatus = task.status === 'Completed' ? 'To Do' : 'Completed';
+    try {
+      await editTask(id, { status: newStatus });
+      showSnackbar(
+        newStatus === 'Completed' ? 'Task completed 🎉' : 'Task reopened',
+        'success'
+      );
+    } catch (err) {
+      showSnackbar('Failed to update task', 'error');
     }
   };
 
-  const handleDeleteTask = async (id) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      try {
-        await removeTask(id);
-      } catch (err) {
-        console.error('Failed to delete task:', err);
-      }
+  const handleDeleteClick = (id) => {
+    const task = tasks.find(t => t.id === id);
+    setDeleteDialog({ open: true, task });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await removeTask(deleteDialog.task.id);
+      showSnackbar('Task deleted', 'success');
+    } catch (err) {
+      showSnackbar('Failed to delete task', 'error');
+    } finally {
+      setDeleteDialog({ open: false, task: null });
     }
   };
 
@@ -157,7 +177,6 @@ const TaskList = () => {
     setEditingTask(null);
   };
 
-  // Loading state
   if (loading && tasks.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -169,24 +188,37 @@ const TaskList = () => {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        mb: 3,
+        mb: 2,
         flexWrap: 'wrap',
         gap: 2,
       }}>
-        <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
-          Tasks
-          <Typography component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-            ({filteredTasks.length})
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+            Tasks
+            <Typography component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400, fontSize: '0.9rem' }}>
+              ({filteredTasks.length})
+            </Typography>
           </Typography>
-        </Typography>
+          <Tooltip title="Refresh" arrow>
+            <Button
+              size="small"
+              onClick={refreshTasks}
+              aria-label="Refresh tasks"
+              sx={{ minWidth: 0, p: 0.5 }}
+            >
+              <RefreshIcon fontSize="small" />
+            </Button>
+          </Tooltip>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setFormOpen(true)}
+          aria-label="Create new task"
         >
           New Task
         </Button>
@@ -206,25 +238,35 @@ const TaskList = () => {
         </Alert>
       )}
 
-      {/* Task List */}
+      {/* List */}
       {filteredTasks.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
+        <Paper sx={{
+          p: 5,
+          textAlign: 'center',
+          bgcolor: 'background.paper',
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}>
+          <TaskIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No tasks found
+            {tasks.length === 0 ? 'No tasks yet' : 'No matching tasks'}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {tasks.length === 0 
-              ? 'Get started by creating your first task!' 
-              : 'Try adjusting your filters to see more tasks.'}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {tasks.length === 0
+              ? 'Get started by creating your first task.'
+              : 'Try adjusting your filters or search term.'}
           </Typography>
-          {tasks.length === 0 && (
+          {tasks.length === 0 ? (
             <Button
-              variant="outlined"
+              variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setFormOpen(true)}
-              sx={{ mt: 2 }}
             >
               Create First Task
+            </Button>
+          ) : (
+            <Button variant="outlined" onClick={handleClearFilters}>
+              Clear Filters
             </Button>
           )}
         </Paper>
@@ -236,7 +278,7 @@ const TaskList = () => {
               task={task}
               onToggleComplete={handleToggleComplete}
               onEdit={openEditForm}
-              onDelete={handleDeleteTask}
+              onDelete={handleDeleteClick}
             />
           ))}
         </Box>
@@ -246,7 +288,7 @@ const TaskList = () => {
       {isMobile && (
         <Fab
           color="primary"
-          aria-label="add task"
+          aria-label="Add task"
           sx={{
             position: 'fixed',
             bottom: 80,
@@ -258,13 +300,53 @@ const TaskList = () => {
         </Fab>
       )}
 
-      {/* Task Form Dialog */}
+      {/* Task form */}
       <TaskForm
         open={formOpen}
         onClose={closeForm}
         onSave={editingTask ? handleEditTask : handleAddTask}
         task={editingTask}
       />
+
+      {/* Delete confirmation */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, task: null })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete Task?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete <strong>{deleteDialog.task?.title}</strong>?
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setDeleteDialog({ open: false, task: null })} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={2500}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
