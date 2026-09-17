@@ -32,7 +32,7 @@ import { useEvents } from '../../hooks/useEvents';
 const CalendarView = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const {
     events,
     loading,
@@ -71,7 +71,6 @@ const CalendarView = () => {
   };
 
   const isSameDay = (a, b) => formatDateKey(a) === formatDateKey(b);
-
   const isToday = (date) => isSameDay(date, new Date());
 
   const getEventsForDay = (date) => {
@@ -121,9 +120,6 @@ const CalendarView = () => {
     setViewMode(mode);
   };
 
-  // When a day cell is clicked:
-  // - Always select it
-  // - If it has events → open popup showing those events
   const handleDateClick = (date) => {
     setSelectedDate(date);
     setCurrentDate(date);
@@ -174,7 +170,6 @@ const CalendarView = () => {
     setEditingEvent(null);
     setFormDate(date || selectedDate || new Date());
     setFormOpen(true);
-    // Close popup if it's open
     if (popupOpen) handleClosePopup();
   };
 
@@ -182,7 +177,6 @@ const CalendarView = () => {
     setEditingEvent(event);
     setFormDate(null);
     setFormOpen(true);
-    // Close popup if it's open
     if (popupOpen) handleClosePopup();
   };
 
@@ -191,13 +185,11 @@ const CalendarView = () => {
       try {
         await removeEvent(id);
         await refreshEvents();
-        // If the popup is open, update its event list
         if (popupDate) {
           const updatedEvents = events.filter(
             e => e.id !== id && formatDateKey(new Date(e.date)) === formatDateKey(popupDate)
           );
           setPopupEvents(updatedEvents);
-          // Close popup if no events left
           if (updatedEvents.length === 0) {
             handleClosePopup();
           }
@@ -247,7 +239,7 @@ const CalendarView = () => {
     }
 
     return (
-      <Box sx={{ 
+      <Box sx={{
         display: 'grid',
         gridTemplateColumns: 'repeat(7, 1fr)',
         gridTemplateRows: 'auto 1fr',
@@ -303,17 +295,17 @@ const CalendarView = () => {
                   p: 0.5,
                   cursor: 'pointer',
                   borderRadius: 1,
-                  bgcolor: cellIsSelected 
-                    ? 'primary.main' 
-                    : cellIsToday 
-                      ? 'action.selected' 
+                  bgcolor: cellIsSelected
+                    ? 'primary.main'
+                    : cellIsToday
+                      ? 'action.selected'
                       : 'transparent',
                   color: cellIsSelected ? 'white' : 'text.primary',
                   border: `1px solid ${
-                    cellIsSelected 
-                      ? 'transparent' 
-                      : cellIsToday 
-                        ? 'primary.main' 
+                    cellIsSelected
+                      ? 'transparent'
+                      : cellIsToday
+                        ? 'primary.main'
                         : theme.palette.divider
                   }`,
                   transition: 'all 0.15s',
@@ -334,13 +326,13 @@ const CalendarView = () => {
                 >
                   {day}
                 </Typography>
-                
+
                 {hasEvents && (
-                  <Box sx={{ 
-                    display: 'flex', 
-                    flexWrap: 'wrap', 
-                    gap: 0.3, 
-                    mt: 0.3, 
+                  <Box sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 0.3,
+                    mt: 0.3,
                     justifyContent: 'center',
                     width: '100%',
                   }}>
@@ -356,9 +348,9 @@ const CalendarView = () => {
                       />
                     ))}
                     {dayEvents.length > (isMobile ? 2 : 3) && (
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           fontSize: isMobile ? '0.45rem' : '0.55rem',
                           color: cellIsSelected ? 'white' : 'text.secondary',
                           lineHeight: 1,
@@ -387,14 +379,14 @@ const CalendarView = () => {
     });
 
     return (
-      <Box sx={{ 
+      <Box sx={{
         display: 'flex',
         flexDirection: 'column',
         flex: 1,
         minHeight: 0,
       }}>
         {/* Weekday headers row */}
-        <Box sx={{ 
+        <Box sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
           gap: 0.5,
@@ -443,10 +435,10 @@ const CalendarView = () => {
                     fontSize: '1rem',
                     lineHeight: 1.2,
                     mt: 0.25,
-                    color: cellIsSelected 
-                      ? 'white' 
-                      : cellIsToday 
-                        ? 'primary.main' 
+                    color: cellIsSelected
+                      ? 'white'
+                      : cellIsToday
+                        ? 'primary.main'
                         : 'text.primary',
                   }}
                 >
@@ -458,7 +450,7 @@ const CalendarView = () => {
         </Box>
 
         {/* Events area */}
-        <Box sx={{ 
+        <Box sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
           gap: 0.5,
@@ -481,14 +473,14 @@ const CalendarView = () => {
                   p: 0.5,
                   cursor: 'pointer',
                   borderRadius: 1,
-                  bgcolor: cellIsSelected 
-                    ? 'action.selected' 
-                    : cellIsToday 
-                      ? 'action.hover' 
+                  bgcolor: cellIsSelected
+                    ? 'action.selected'
+                    : cellIsToday
+                      ? 'action.hover'
                       : 'transparent',
                   border: `1px solid ${
-                    cellIsSelected 
-                      ? 'primary.main' 
+                    cellIsSelected
+                      ? 'primary.main'
                       : theme.palette.divider
                   }`,
                   overflow: 'auto',
@@ -496,17 +488,17 @@ const CalendarView = () => {
                     bgcolor: 'action.hover',
                   },
                   '&::-webkit-scrollbar': { width: '4px' },
-                  '&::-webkit-scrollbar-thumb': { 
-                    background: theme.palette.divider, 
-                    borderRadius: '2px' 
+                  '&::-webkit-scrollbar-thumb': {
+                    background: theme.palette.divider,
+                    borderRadius: '2px'
                   },
                 }}
               >
                 {dayEvents.length === 0 ? (
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      color: 'text.disabled', 
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.disabled',
                       fontSize: '0.65rem',
                       textAlign: 'center',
                       mt: 1,
@@ -529,9 +521,9 @@ const CalendarView = () => {
                         pointerEvents: 'none',
                       }}
                     >
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           display: 'block',
                           fontSize: '0.6rem',
                           opacity: 0.85,
@@ -541,9 +533,9 @@ const CalendarView = () => {
                       >
                         {event.time ? formatTime(event.date) : 'All day'}
                       </Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           display: 'block',
                           fontSize: '0.7rem',
                           fontWeight: 600,
@@ -571,15 +563,15 @@ const CalendarView = () => {
     const dayEvents = getEventsForDay(selectedDate);
 
     return (
-      <Box sx={{ 
+      <Box sx={{
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
         overflow: 'hidden',
       }}>
-        <Box sx={{ 
-          mb: 1.5, 
+        <Box sx={{
+          mb: 1.5,
           flexShrink: 0,
           display: 'flex',
           justifyContent: 'space-between',
@@ -590,8 +582,8 @@ const CalendarView = () => {
               {dayNames[selectedDate.getDay()]}, {monthNames[selectedDate.getMonth()]} {selectedDate.getDate()}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {dayEvents.length === 0 
-                ? 'Nothing scheduled.' 
+              {dayEvents.length === 0
+                ? 'Nothing scheduled.'
                 : `${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'}`}
             </Typography>
           </Box>
@@ -607,11 +599,11 @@ const CalendarView = () => {
         </Box>
 
         {dayEvents.length === 0 ? (
-          <Box sx={{ 
+          <Box sx={{
             flex: 1,
-            display: 'flex', 
+            display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center', 
+            alignItems: 'center',
             justifyContent: 'center',
             gap: 1,
             border: `1px dashed ${theme.palette.divider}`,
@@ -623,18 +615,18 @@ const CalendarView = () => {
             </Typography>
           </Box>
         ) : (
-          <List 
-            dense 
-            sx={{ 
+          <List
+            dense
+            sx={{
               py: 0,
               flex: 1,
               overflow: 'auto',
               border: `1px solid ${theme.palette.divider}`,
               borderRadius: 2,
               '&::-webkit-scrollbar': { width: '4px' },
-              '&::-webkit-scrollbar-thumb': { 
-                background: theme.palette.divider, 
-                borderRadius: '2px' 
+              '&::-webkit-scrollbar-thumb': {
+                background: theme.palette.divider,
+                borderRadius: '2px'
               },
             }}
           >
@@ -672,9 +664,9 @@ const CalendarView = () => {
                           </Typography>
                         )}
                         {event.time && (
-                          <Typography 
-                            variant="caption" 
-                            color="text.secondary" 
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
                             sx={{ display: 'block', mt: 0.2, fontSize: '0.7rem' }}
                           >
                             🕐 {formatTime(event.date)}
@@ -682,18 +674,20 @@ const CalendarView = () => {
                         )}
                       </Box>
                     }
-                    secondaryTypographyProps={{ component: 'div' }}
+                    slotProps={{
+                      secondary: { component: 'div' },
+                    }}
                   />
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => handleEditEvent(event)}
                       sx={{ color: 'text.secondary', p: 0.5 }}
                     >
                       <EditIcon sx={{ fontSize: 16 }} />
                     </IconButton>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => handleDeleteEvent(event.id)}
                       sx={{ color: 'text.secondary', p: 0.5 }}
                     >
@@ -711,7 +705,7 @@ const CalendarView = () => {
 
   // ---------- Render ----------
   return (
-    <Box sx={{ 
+    <Box sx={{
       height: 'calc(100vh - 140px)',
       display: 'flex',
       flexDirection: 'column',
@@ -720,9 +714,9 @@ const CalendarView = () => {
     }}>
       {/* Navigation Header with Title and Tabs */}
       <Box sx={{ flexShrink: 0 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           mb: 1,
           flexWrap: 'wrap',
@@ -738,9 +732,9 @@ const CalendarView = () => {
             <IconButton onClick={() => handleNavigate(1)} size="small">
               <ChevronRightIcon />
             </IconButton>
-            <Button 
-              size="small" 
-              variant="outlined" 
+            <Button
+              size="small"
+              variant="outlined"
               onClick={handleToday}
               sx={{ ml: 1 }}
             >
@@ -757,8 +751,8 @@ const CalendarView = () => {
           </Button>
         </Box>
 
-        <Box sx={{ 
-          display: 'flex', 
+        <Box sx={{
+          display: 'flex',
           gap: 0.5,
           mb: 1.5,
         }}>
@@ -768,7 +762,7 @@ const CalendarView = () => {
               size="small"
               variant={viewMode === mode ? 'contained' : 'outlined'}
               onClick={() => handleViewChange(mode)}
-              sx={{ 
+              sx={{
                 textTransform: 'capitalize',
                 fontSize: '0.75rem',
                 minWidth: 70,
@@ -782,10 +776,10 @@ const CalendarView = () => {
       </Box>
 
       {/* Calendar Content */}
-      <Paper sx={{ 
+      <Paper sx={{
         flex: 1,
-        p: 1.5, 
-        bgcolor: 'background.paper', 
+        p: 1.5,
+        bgcolor: 'background.paper',
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 2,
         display: 'flex',
@@ -805,9 +799,9 @@ const CalendarView = () => {
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <DialogTitle sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           pb: 1,
         }}>
@@ -860,9 +854,9 @@ const CalendarView = () => {
                           </Typography>
                         )}
                         {event.time && (
-                          <Typography 
-                            variant="caption" 
-                            color="text.secondary" 
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
                             sx={{ display: 'block', mt: 0.2, fontSize: '0.7rem' }}
                           >
                             🕐 {formatTime(event.date)}
@@ -870,18 +864,20 @@ const CalendarView = () => {
                         )}
                       </Box>
                     }
-                    secondaryTypographyProps={{ component: 'div' }}
+                    slotProps={{
+                      secondary: { component: 'div' },
+                    }}
                   />
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => handleEditEvent(event)}
                       sx={{ color: 'text.secondary', p: 0.5 }}
                     >
                       <EditIcon sx={{ fontSize: 16 }} />
                     </IconButton>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => handleDeleteEvent(event.id)}
                       sx={{ color: 'text.secondary', p: 0.5 }}
                     >
