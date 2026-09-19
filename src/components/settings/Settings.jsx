@@ -27,6 +27,7 @@ import { useTheme as useThemeContext } from '../../context/ThemeContext';
 import ExportDialog from './ExportDialog';
 import ImportDialog from './ImportDialog';
 import ClearDataDialog from './ClearDataDialog';
+import NotificationSettingsSection from './NotificationSettingsSection';
 import {
   exportAllData,
   downloadJSON,
@@ -82,7 +83,6 @@ const Settings = () => {
     refreshStats();
   }, []);
 
-  // ---------- Export ----------
   const handleExport = async () => {
     try {
       const json = await exportAllData();
@@ -94,7 +94,6 @@ const Settings = () => {
     }
   };
 
-  // ---------- Import ----------
   const handleImport = async (parsed) => {
     try {
       await importAllData(parsed);
@@ -108,7 +107,6 @@ const Settings = () => {
     }
   };
 
-  // ---------- Clear data ----------
   const handleClearData = async () => {
     try {
       await clearAllData();
@@ -153,6 +151,9 @@ const Settings = () => {
           </Button>
         </Box>
       </Paper>
+
+      {/* Notifications */}
+      <NotificationSettingsSection />
 
       {/* Data Management */}
       <Paper
@@ -278,7 +279,7 @@ const Settings = () => {
         )}
       </Paper>
 
-      {/* App Info */}
+      {/* About */}
       <Paper
         sx={{
           p: 3,
@@ -296,7 +297,7 @@ const Settings = () => {
         <Divider sx={{ mb: 2 }} />
 
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Avatar src="/favicon.png" alt="UniTasker" sx={{ width: 56, height: 56 }} />
+          <Avatar src="/favicon.svg" alt="UniTasker" sx={{ width: 56, height: 56 }} />
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               UniTasker
@@ -345,7 +346,6 @@ const Settings = () => {
         onConfirm={handleClearData}
       />
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
